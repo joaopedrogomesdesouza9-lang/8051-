@@ -1,0 +1,100 @@
+; Definições de pinos
+COL0    EQU P0.6
+COL1    EQU P0.5
+COL2    EQU P0.4
+ROW0    EQU P0.3
+ROW1    EQU P0.2
+ROW2    EQU P0.1
+ROW3    EQU P0.0
+
+            ORG 00H
+            JMP MAIN
+
+            ORG 30H
+
+MAIN:
+            ; Verifica ROW0 (teclas: 1, 2, 3)
+            CLR     ROW0
+            MOV     B, #00H
+            ACALL   LE_TECLA
+            SETB    ROW0
+            JNZ     TRATA_TECLA
+
+            ; Verifica ROW1 (teclas: 4, 5, 6)
+            CLR     ROW1
+            MOV     B, #03H
+            ACALL   LE_TECLA
+            SETB    ROW1
+            JNZ     TRATA_TECLA
+
+            ; Verifica ROW2 (teclas: 7, 8, 9)
+            CLR     ROW2
+            MOV     B, #06H
+            ACALL   LE_TECLA
+            SETB    ROW2
+            JNZ     TRATA_TECLA
+
+            ; Verifica ROW3 (teclas: *, 0, #)
+            CLR     ROW3
+            MOV     B, #09H
+            ACALL   LE_TECLA
+            SETB    ROW3
+            JZ      NADA_TECLADO
+
+TRATA_TECLA:
+            ADD     A, B
+            ACALL   WR_7SEG
+            MOV     R0, A
+            JMP     MAIN
+
+NADA_TECLADO:
+            CLR     A
+            ACALL   WR_7SEG
+            MOV     R0, #00H
+            JMP     MAIN
+
+; Leitura das colunas
+LE_TECLA:
+            JB      COL0, LE_TEC_SALTA_1
+            MOV     A, #1
+            JMP     LE_TECLA_FIM
+
+LE_TEC_SALTA_1:
+            JB      COL1, LE_TEC_SALTA_2
+            MOV     A, #2
+            JMP     LE_TECLA_FIM
+
+LE_TEC_SALTA_2:
+            JB      COL2, LE_TEC_SALTA_3
+            MOV     A, #3
+            JMP     LE_TECLA_FIM
+
+LE_TEC_SALTA_3:
+            CLR     A
+
+LE_TECLA_FIM:
+            RET
+
+; Escrita no display de 7 segmentos
+WR_7SEG:
+            PUSH    ACC
+            MOV     DPTR, #TAB_7SEG
+            MOVC    A, @A+DPTR
+            MOV     P1, A
+            POP     ACC
+            RET
+
+; Tabela de códigos para display de 7 segmentos
+TAB_7SEG:
+            DB 11111111B  ; 0
+            DB 11111001B  ; 1
+            DB 10100100B  ; 2
+            DB 10110000B  ; 3
+            DB 10011001B  ; 4
+            DB 10010010B  ; 5
+            DB 10000010B  ; 6
+            DB 11111000B  ; 7
+            DB 10000000B  ; 8
+            DB 10010000B  ; 9
+
+            END
