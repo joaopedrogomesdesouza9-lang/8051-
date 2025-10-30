@@ -1,0 +1,43 @@
+ ORG 00H 
+
+LJMP INICIO 
+
+DELAY_500MS: 
+
+    MOV R2, #10 
+
+LOOP_EXTERNO: 
+
+    MOV R1, #116 
+
+LOOP_MEIO: 
+
+    MOV R0, #214 
+
+LOOP_INTERNO: 
+
+    DJNZ R0, LOOP_INTERNO 
+
+    DJNZ R1, LOOP_MEIO 
+
+    DJNZ R2, LOOP_EXTERNO 
+
+    NOP    
+
+   NOP              ; +1 µs (12 MHz) para corrigir a defasagem por chamada 
+
+    RET 
+
+INICIO: 
+
+    MOV P1, #0FEH 
+
+PISCA: 
+
+    CPL P1.0 
+
+    ACALL DELAY_500MS 
+
+    SJMP PISCA 
+
+END 
