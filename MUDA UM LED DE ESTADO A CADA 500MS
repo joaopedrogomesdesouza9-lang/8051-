@@ -23,8 +23,7 @@ LOOP_INTERNO:
     DJNZ R2, LOOP_EXTERNO 
 
     NOP    
-
-   NOP              ; +1 µs (12 MHz) para corrigir a defasagem por chamada 
+    NOP              ; +1 µs (12 MHz) para corrigir a defasagem por chamada 
 
     RET 
 
