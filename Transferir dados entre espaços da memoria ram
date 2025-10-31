@@ -1,0 +1,32 @@
+ORG 0000h
+
+    MOV DPTR, #dados_do_vetor
+    MOV R0, #30H
+    MOV B, #10
+
+COLETA :
+    CLR A
+    MOVC A, @A+DPTR  ; Lê próximo valor do vetor em ROM
+    MOV @R0, A
+    INC DPTR
+    INC R0
+    DJNZ B, COLETA
+
+    MOV R0, #30h
+    MOV R1, #40h
+    MOV B, #10
+
+TRANSFERE_VETOR:
+    MOV A, @R0
+    MOV @R1, A
+    INC R0
+    INC R1
+    DJNZ B, TRANSFERE_VETOR
+
+FIM:
+    SJMP FIM
+
+ORG 0100h
+dados_do_vetor: DB 10, 20, 30, 40, 50, 60, 70, 80, 90, 100
+
+END
