@@ -1,0 +1,102 @@
+;=======================================================================
+; PROGRAMA: Coleta e Transferência com Atraso de 1 Segundo via Timer
+; AUTOR: Gemini (cálculos refinados)
+; DATA: 12/11/2025
+; HARDWARE: Microcontrolador 8051 com cristal de 12 MHz
+; DESCRIÇÃO: Este programa coleta 10 bytes da memória de programa,
+;            aguarda um tempo precisamente calculado para 1 segundo
+;            usando a interrupção do Timer 0 e, em seguida, transfere
+;            os bytes para outro local na memória RAM interna.
+;=======================================================================
+
+;-----------------------------------------------------------------------
+; DEFINIÇÃO DE CONSTANTES
+;-----------------------------------------------------------------------
+; Cristal: 12MHz -> Ciclo de Máquina = 1µs
+; Intervalo desejado: 50.000 µs (50ms)
+; Overhead da ISR: 12 µs (12 ciclos)
+; Contagem corrigida do timer: 50.000 - 12 = 49.988 ciclos.
+; Valor a carregar = 65536 - 49988 = 15548 = 3CBCh.
+VALOR_ALTO_TIMER  EQU 3Ch
+VALOR_BAIXO_TIMER EQU 0BCh  ; <-- VALOR ATUALIZADO
+CONTADOR_1S       EQU 20      ; 20 interrupções de 50ms = 1 segundo
+
+;-----------------------------------------------------------------------
+; VETORES DE RESET E INTERRUPÇÃO
+;-----------------------------------------------------------------------
+ORG 0000h                   ; Endereço do Vetor de Reset
+    LJMP PROGRAMA_PRINCIPAL ; Pula para o início do código principal
+
+ORG 000Bh                   ; Endereço do Vetor de Interrupção do Timer 0 (TF0)
+    LJMP ISR_TIMER0         ; Pula para a rotina de tratamento da interrupção
+
+;=======================================================================
+; PROGRAMA PRINCIPAL
+;=======================================================================
+ORG 0030h
+PROGRAMA_PRINCIPAL:
+
+    ; --- 1. INICIALIZAÇÃO DO SISTEMA ---
+    MOV SP, #60h            ; Define a Stack Pointer para uma área segura da RAM
+    MOV TMOD, #01h          ; Configura Timer 0 no Modo 1 (16 bits, temporizador)
+    MOV IE, #82h            ; Habilita a interrupção do Timer 0 (ET0) e a global (EA)
+
+    ; --- 2. COLETA DE DADOS DA ROM PARA A RAM ---
+    MOV DPTR, #Vetor        ; DPTR aponta para o início dos dados na ROM
+    MOV R0, #30h            ; R0 é o ponteiro de destino na RAM (bloco 1)
+    MOV B, #10              ; B é o contador de bytes a serem lidos
+
+    COLETA_LOOP:
+        CLR A               ; Limpa o acumulador
+        MOVC A, @A+DPTR     ; Lê um byte da ROM (endereçado por DPTR)
+        MOV @R0, A          ; Armazena o byte na RAM (endereçado por R0)
+        INC DPTR            ; Avança o ponteiro da ROM
+        INC R0              ; Avança o ponteiro da RAM
+        DJNZ B, COLETA_LOOP ; Repete para os 10 bytes
+
+    ; --- 3. PREPARAÇÃO E INÍCIO DA ESPERA DE 1 SEGUNDO ---
+    MOV R2, #CONTADOR_1S    ; Carrega nosso contador para 20 interrupções
+    MOV TH0, #VALOR_ALTO_TIMER  ; Carrega o byte mais significativo
+    MOV TL0, #VALOR_BAIXO_TIMER ; Carrega o byte menos significativo (corrigido)
+    SETB TR0                ; Liga o Timer 0 para iniciar a contagem
+
+    ; --- 4. LOOP DE ESPERA INFINITO ---
+    AGUARDA_INTERRUPCAO:
+        SJMP AGUARDA_INTERRUPCAO
+
+;=======================================================================
+; ROTINA DE SERVIÇO DE INTERRUPÇÃO (ISR) DO TIMER 0
+;=======================================================================
+ISR_TIMER0:
+    CLR TR0                 ; Para o timer para garantir a precisão na recarga
+
+    DJNZ R2, RECARREGA_TIMER_E_SAI ; Decrementa o contador. Se não for zero, recarrega.
+
+    ; --- Se R2 chegou a zero (após 1s), executa a transferência ---
+    MOV R0, #30h            ; R0 aponta para a origem dos dados
+    MOV R1, #40h            ; R1 aponta para o destino dos dados
+    MOV B, #10              ; B é o contador de bytes
+
+    TRANSFERENCIA_LOOP:
+        MOV A, @R0
+        MOV @R1, A
+        INC R0
+        INC R1
+        DJNZ B, TRANSFERENCIA_LOOP
+
+    RETI                    ; Tarefa concluída. Retorna da interrupção.
+
+RECARREGA_TIMER_E_SAI:
+    ; Recarrega o timer para a próxima contagem
+    MOV TH0, #VALOR_ALTO_TIMER
+    MOV TL0, #VALOR_BAIXO_TIMER
+    SETB TR0                ; Reinicia o timer
+    RETI                    ; Retorna da interrupção para o loop de espera
+
+;=======================================================================
+; SEÇÃO DE DADOS NA MEMÓRIA DE PROGRAMA (ROM)
+;=======================================================================
+ORG 0100h
+Vetor: DB 01h, 02h, 03h, 04h, 05h, 06h, 07h, 08h, 09h, 0Ah
+
+END ; Fim do programa
