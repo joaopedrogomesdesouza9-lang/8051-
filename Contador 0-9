@@ -1,0 +1,101 @@
+ORG 0000H
+LJMP MAIN
+
+ORG 000BH         ; Vetor de interrupção Timer 0
+LJMP ISR_Timer0
+
+ORG 0030H
+
+; ------------------------------------------------------------------
+; CONFIGURAÇÕES E CONSTANTES
+; ------------------------------------------------------------------
+VALOR_TH0 EQU 06H ; 256 - 250 = 6 -> 250µs @ 12MHz
+
+; --- Variáveis (endereços RAM interna) ---
+CONTADOR_250US    EQU 40H ; Conta 40 interrupções de 250µs = 10ms
+CONTADOR_10MS     EQU 41H ; Conta 100 períodos de 10ms = 1s
+CONTADOR_DISPLAY  EQU 42H ; (NOVO) Contador de 0 a 9 para o display
+
+; ==================================================================
+MAIN:
+    ; Inicializar contadores
+    MOV CONTADOR_250US, #40    ; 40 decimal
+    MOV CONTADOR_10MS, #100    ; 100 decimal
+    MOV CONTADOR_DISPLAY, #0   ; (NOVO) Inicia o contador do display em 0
+    
+    ; Configurar Timer 0: Modo 2 (8-bit auto-reload)
+    MOV TMOD, #02H
+    MOV TH0, #VALOR_TH0        ; Valor de recarga
+    MOV TL0, #VALOR_TH0        ; Valor inicial
+    
+    ; (NOVO) Exibe o valor inicial (0) no display antes de começar
+    MOV A, CONTADOR_DISPLAY
+    LCALL WR_7SEG
+    
+    ; Habilitar interrupções
+    SETB ET0                   ; Habilita interrupção do Timer 0
+    SETB EA                    ; Habilita interrupção global
+    
+    ; Iniciar Timer 0
+    SETB TR0
+    
+LOOP:
+    SJMP LOOP                  ; Loop infinito
+
+; ==================================================================
+; ISR - Rotina de Serviço da Interrupção do Timer 0 (ocorre a cada 250µs)
+; ==================================================================
+ISR_Timer0:
+    DJNZ CONTADOR_250US, Exit_ISR    ; Decrementa. Se não zerou, sai da ISR
+    
+    ; Se zerou -> passaram-se 10ms
+    MOV CONTADOR_250US, #40          ; Recarrega para a próxima contagem de 10ms
+    
+    DJNZ CONTADOR_10MS, Exit_ISR     ; Decrementa. Se não zerou, sai da ISR
+    
+    ; Se zerou -> passou 1 segundo. É AQUI QUE A MÁGICA ACONTECE!
+    MOV CONTADOR_10MS, #100          ; Recarrega para a próxima contagem de 1s
+    
+    ; --- (LÓGICA DO DISPLAY - MODIFICADO) ---
+    INC CONTADOR_DISPLAY             ; Incrementa o número a ser exibido
+    MOV A, CONTADOR_DISPLAY          ; Move o valor para o Acumulador
+    
+    CJNE A, #10, ATUALIZA_DISPLAY    ; Compara com 10. Se for diferente, pula para atualizar
+    
+    ; Se chegou em 10, reseta para 0
+    MOV CONTADOR_DISPLAY, #0         ; Zera a variável
+    MOV A, #0                        ; Coloca 0 no Acumulador para exibir
+    
+ATUALIZA_DISPLAY:
+    LCALL WR_7SEG                    ; Chama a rotina para escrever no display
+    
+Exit_ISR:
+    RETI                             ; Retorna da interrupção
+
+; ==================================================================
+; SUB-ROTINAS
+; ==================================================================
+
+; --- Escrita no display de 7 segmentos ---
+WR_7SEG:
+    PUSH    ACC
+    MOV     DPTR, #TAB_7SEG
+    MOVC    A, @A+DPTR       ; Busca o padrão na tabela usando o valor de A como índice
+    MOV     P1, A            ; Envia o padrão para a Porta 1
+    POP     ACC
+    RET
+
+; --- Tabela de conversão para display de 7 segmentos (Catodo Comum) ---
+TAB_7SEG:
+    DB 00111111B  ; 0 - 3Fh
+    DB 00000110B  ; 1 - 06h
+    DB 01011011B  ; 2 - 5Bh
+    DB 01001111B  ; 3 - 4Fh
+    DB 01100110B  ; 4 - 66h
+    DB 01101101B  ; 5 - 6Dh
+    DB 01111101B  ; 6 - 7Dh
+    DB 00000111B  ; 7 - 07h
+    DB 01111111B  ; 8 - 7Fh
+    DB 01101111B  ; 9 - 6Fh
+
+END
