@@ -14,21 +14,21 @@ VALOR_TH0 EQU 06H ; 256 - 250 = 6 -> 250µs @ 12MHz
 ; --- Variáveis (endereços RAM interna) ---
 CONTADOR_250US    EQU 40H ; Conta 40 interrupções de 250µs = 10ms
 CONTADOR_10MS     EQU 41H ; Conta 100 períodos de 10ms = 1s
-CONTADOR_DISPLAY  EQU 42H ; (NOVO) Contador de 0 a 9 para o display
+CONTADOR_DISPLAY  EQU 42H ; Contador de 0 a 9 para o display
 
 ; ==================================================================
 MAIN:
     ; Inicializar contadores
     MOV CONTADOR_250US, #40    ; 40 decimal
     MOV CONTADOR_10MS, #100    ; 100 decimal
-    MOV CONTADOR_DISPLAY, #0   ; (NOVO) Inicia o contador do display em 0
+    MOV CONTADOR_DISPLAY, #0   ; Inicia o contador do display em 0
     
     ; Configurar Timer 0: Modo 2 (8-bit auto-reload)
     MOV TMOD, #02H
     MOV TH0, #VALOR_TH0        ; Valor de recarga
     MOV TL0, #VALOR_TH0        ; Valor inicial
     
-    ; (NOVO) Exibe o valor inicial (0) no display antes de começar
+    ; Exibe o valor inicial (0) no display antes de começar
     MOV A, CONTADOR_DISPLAY
     LCALL WR_7SEG
     
@@ -53,10 +53,10 @@ ISR_Timer0:
     
     DJNZ CONTADOR_10MS, Exit_ISR     ; Decrementa. Se não zerou, sai da ISR
     
-    ; Se zerou -> passou 1 segundo. É AQUI QUE A MÁGICA ACONTECE!
+    ; Se zerou -> passou 1 segundo
     MOV CONTADOR_10MS, #100          ; Recarrega para a próxima contagem de 1s
     
-    ; --- (LÓGICA DO DISPLAY - MODIFICADO) ---
+    ; --- LÓGICA DO DISPLAY ---
     INC CONTADOR_DISPLAY             ; Incrementa o número a ser exibido
     MOV A, CONTADOR_DISPLAY          ; Move o valor para o Acumulador
     
@@ -75,7 +75,6 @@ Exit_ISR:
 ; ==================================================================
 ; SUB-ROTINAS
 ; ==================================================================
-
 ; --- Escrita no display de 7 segmentos ---
 WR_7SEG:
     PUSH    ACC
@@ -85,17 +84,18 @@ WR_7SEG:
     POP     ACC
     RET
 
-; --- Tabela de conversão para display de 7 segmentos (Catodo Comum) ---
+; --- Tabela de conversão para display de 7 segmentos (ANODO COMUM) ---
+; Bits invertidos em relação ao cátodo comum
 TAB_7SEG:
-    DB 00111111B  ; 0 - 3Fh
-    DB 00000110B  ; 1 - 06h
-    DB 01011011B  ; 2 - 5Bh
-    DB 01001111B  ; 3 - 4Fh
-    DB 01100110B  ; 4 - 66h
-    DB 01101101B  ; 5 - 6Dh
-    DB 01111101B  ; 6 - 7Dh
-    DB 00000111B  ; 7 - 07h
-    DB 01111111B  ; 8 - 7Fh
-    DB 01101111B  ; 9 - 6Fh
+    DB 11000000B  ; 0 
+    DB 11111001B  ; 1 
+    DB 10100100B  ; 2 
+    DB 10110000B  ; 3 
+    DB 10011001B  ; 4 
+    DB 10010010B  ; 5 
+    DB 10000010B  ; 6 
+    DB 11111000B  ; 7 
+    DB 10000000B  ; 8 
+    DB 10010000B  ; 9 
 
 END
