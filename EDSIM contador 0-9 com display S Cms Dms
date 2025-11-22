@@ -1,0 +1,125 @@
+; Definição de Variáveis na Memória RAM (Data)
+CNT_INTERRUPCAO EQU 30H  ; Conta interrupções para fechar 10ms
+DIG_DEZ_MS      EQU 31H  ; Dígito da dezena de milissegundo (0.01s)
+DIG_CEN_MS      EQU 32H  ; Dígito da centena de milissegundo (0.1s)
+DIG_SEC         EQU 33H  ; Dígito dos segundos
+
+VALOR_TH0       EQU 06   ; Recarga para 250us (256-6=250) com Clock 12MHz/Modo2
+
+ORG 0000H
+    LJMP MAIN
+
+; Vetor de Interrupção do Timer 0
+ORG 000BH         
+    LJMP TIMER0_ISR
+
+ORG 0030H
+MAIN:
+    ; --- Inicialização ---
+    MOV CNT_INTERRUPCAO, #40 ; 40 * 250us = 10ms
+    MOV DIG_DEZ_MS, #0
+    MOV DIG_CEN_MS, #0
+    MOV DIG_SEC, #0
+    
+    ; Configurar Timer 0 em Modo 2 (8-bit Auto-reload)
+    MOV TMOD, #02H
+    MOV TH0, #VALOR_TH0       
+    MOV TL0, #VALOR_TH0       
+    
+    ; Habilitar Interrupções
+    SETB ET0 ; Enable Timer 0 Interrupt
+    SETB EA  ; Enable All Interrupts           
+    SETB TR0 ; Start Timer 0
+    
+; --- Loop Principal: Atualização dos Displays (Multiplexação) ---
+LOOP:
+    ; 1. Exibir SEGUNDOS no Display 3 (Mais à esquerda)
+    ; Seleciona Disp 3 (P3.4=1, P3.3=1)
+    SETB P3.4
+    SETB P3.3
+    MOV A, DIG_SEC      ; Carrega valor dos segundos
+    LCALL WR_7SEG       ; Escreve no display
+    LCALL DELAY_MUX     ; Pequeno delay para brilho
+
+    ; 2. Exibir CENTENA DE MS no Display 2
+    ; Seleciona Disp 2 (P3.4=1, P3.3=0)
+    SETB P3.4
+    CLR P3.3
+    MOV A, DIG_CEN_MS   ; Carrega valor 0.1s
+    LCALL WR_7SEG
+    LCALL DELAY_MUX
+
+    ; 3. Exibir DEZENA DE MS no Display 1
+    ; Seleciona Disp 1 (P3.4=0, P3.3=1)
+    CLR P3.4
+    SETB P3.3
+    MOV A, DIG_DEZ_MS   ; Carrega valor 0.01s
+    LCALL WR_7SEG
+    LCALL DELAY_MUX
+
+    SJMP LOOP           ; Volta e repete o ciclo infinitamente
+
+; --- Interrupção: Apenas Contagem ---
+TIMER0_ISR:
+    PUSH PSW            ; Salva contexto (opcional mas recomendado)
+    PUSH ACC
+    
+    DJNZ CNT_INTERRUPCAO, SAIDA_ISR  ; Decrementa. Se não zerar, sai.
+    
+    ; Passou 10ms (40 interrupções)
+    MOV CNT_INTERRUPCAO, #40
+    
+    ; Incrementa casa 10ms (Display 1)
+    INC DIG_DEZ_MS
+    MOV A, DIG_DEZ_MS
+    CJNE A, #10, SAIDA_ISR ; Se não é 10, sai.
+    MOV DIG_DEZ_MS, #0     ; Zerou, vai um...
+    
+    ; Incrementa casa 100ms (Display 2)
+    INC DIG_CEN_MS
+    MOV A, DIG_CEN_MS
+    CJNE A, #10, SAIDA_ISR
+    MOV DIG_CEN_MS, #0     ; Zerou, vai um...
+    
+    ; Incrementa Segundos (Display 3)
+    INC DIG_SEC
+    MOV A, DIG_SEC
+    CJNE A, #10, SAIDA_ISR
+    MOV DIG_SEC, #0        ; Se chegou a 10, volta a 0
+    
+SAIDA_ISR:
+    POP ACC
+    POP PSW
+    RETI
+
+; --- Subrotina: Escreve no Port 1 ---
+WR_7SEG:
+    MOV     DPTR, #TAB_7SEG
+    MOVC    A, @A+DPTR     ; Busca código do 7seg
+    MOV     P1, A          ; Envia para o hardware
+    RET
+
+; --- Subrotina: Delay para Multiplexação ---
+; Necessário para o display não piscar muito rápido no simulador 
+; e para simular a persistência da visão
+DELAY_MUX:
+    MOV R7, #0      ; Ajuste esse valor se necessário para o simulador
+DL1:    
+    DJNZ R7, DL1
+    RET
+
+; --- Tabela de Códigos (Anodo Comum ou Catodo dependendo do HW) ---
+; Valores fornecidos no código original (Parecem adequados ao EdSim)
+TAB_7SEG:
+    DB 11000000B  ; 0 
+    DB 11111001B  ; 1 
+    DB 10100100B  ; 2 
+    DB 10110000B  ; 3 
+    DB 10011001B  ; 4 
+    DB 10010010B  ; 5 
+    DB 10000010B  ; 6 
+    DB 11111000B  ; 7 
+    DB 10000000B  ; 8 
+    DB 10010000B  ; 9 
+
+END
