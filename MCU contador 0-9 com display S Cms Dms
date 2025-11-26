@@ -1,131 +1,95 @@
-; ===================================================================
-;  CRONÔMETRO CORRIGIDO - LÓGICA INVERTIDA (ACTIVE LOW)
-;  PARA HARDWARE: COMMON ANODE + PNP TRANSISTORS
-; ===================================================================
-
-CONTADOR_INT     EQU 30H  
-DIG_DEZ_MS       EQU 31H  
-DIG_CEN_MS       EQU 32H  
-DIG_SEC          EQU 33H  
-
-VALOR_TH0        EQU 06   
+CONTADOR_250US    EQU 40H ; 40x250us=10ms
+CONTADOR_10MS     EQU 41H ; 10x10ms=100ms
+CONTADOR_100ms  EQU 42H ; 10x100ms=1s
+CONTADOR_10s      EQU 43H ;
+VALOR_TH0         EQU 06  ; 256 - 250 = 6
 
 ORG 0000H
-    LJMP MAIN
+LJMP MAIN
 
 ORG 000BH
-    LJMP TIMER0_ISR
+LJMP Timer0
 
 ORG 0030H
 MAIN:
-    ; --- INICIALIZAÇÃO ---
-    MOV CONTADOR_INT, #40
-    MOV DIG_DEZ_MS, #0
-    MOV DIG_CEN_MS, #0
-    MOV DIG_SEC, #0
-
-    ; Configura Timer 0
-    MOV TMOD, #02H      
-    MOV TH0, #VALOR_TH0
-    MOV TL0, #VALOR_TH0
+    MOV CONTADOR_250US, #40
+    MOV CONTADOR_10MS, #0  
+    MOV CONTADOR_100ms, #0  
+    MOV CONTADOR_10s, #0   
     
-    ; --- CORREÇÃO PRINCIPAL AQUI ---
-    ; Começa com todos os bits da P3 em 1.
-    ; Em lógica PNP, 1 significa DESLIGADO.
-    MOV P3, #0FFH 
+    ; Configurar Timer 0
+    MOV TMOD, #02H
+    MOV TH0, #VALOR_TH0       
+    MOV TL0, #VALOR_TH0       
 
-    SETB ET0
-    SETB EA
-    SETB TR0 
+    ; Exibe 0
+    MOV P3, #0FFH
 
-; ===================================================================
-; LOOP PRINCIPAL COM LÓGICA INVERTIDA
-; "CLR" agora liga o display (Terra virtual)
-; "SETB" ou mov #0FFh desliga
-; ===================================================================
-LOOP:
-     ; -------------------------------------------------------
-    ; 3. EXIBIR DEZENAS MS (Direita - P3.2)
-    ; -------------------------------------------------------
-    MOV P3, #0FFH      ; Desliga tudo
-    MOV A, DIG_DEZ_MS   
+    SETB ET0                  
+    SETB EA                    
+    SETB TR0
+
+
+LOOP: 
+    ; Exibe Dezenas MS 
+    MOV P3, #0FFH             
+    MOV A, CONTADOR_DISPLAY  
     LCALL WR_7SEG
-    CLR P3.3            ; <--- CLR LIGA O PINO 3.2
-   
-    ; -------------------------------------------------------
-    ; 2. EXIBIR CENTENAS MS (Meio - P3.1)
-    ; -------------------------------------------------------
-    MOV P3, #0FFH       ; Desliga tudo
-    MOV A, DIG_CEN_MS   
+    CLR P3.3                 
+
+    ; Exibe Centenas MS 
+    MOV P3, #0FFH            
+    MOV A, CONTADOR_10MS      
     LCALL WR_7SEG
-    CLR P3.2            ; <--- CLR LIGA O PINO 3.1
-    
-    ; -------------------------------------------------------
-    ; 1. EXIBIR SEGUNDOS (Esquerda - P3.3)
-    ; -------------------------------------------------------
-    MOV P3, #0FFH       ; Desliga todos os displays (Reset)
-    MOV A, DIG_SEC      
-    LCALL WR_7SEG       
-    CLR P3.1            ; <--- CLR LIGA O PINO 3.3 (Sinal 0V)
-       
+    CLR P3.2  
 
-    
-
-    
+    ; Exibe Segundos 
+    MOV P3, #0FFH             
+    MOV A, CONTADOR_10s
+    LCALL WR_7SEG
+    CLR P3.1  
 
     SJMP LOOP
 
-; ===================================================================
-; INTERRUPÇÃO (Igual à anterior)
-; ===================================================================
-TIMER0_ISR:
-    PUSH PSW
+
+Timer0: 
     PUSH ACC
+    PUSH PSW
+    
+    DJNZ CONTADOR_250US, Exit 
+    MOV CONTADOR_250US, #40   
 
-    DJNZ CONTADOR_INT, SAIDA_ISR 
-    MOV CONTADOR_INT, #40        
-    
-    ; Atualiza Dezena MS (Display Direita)
-    INC DIG_DEZ_MS
-    MOV A, DIG_DEZ_MS
-    CJNE A, #10, SAIDA_ISR       
-    MOV DIG_DEZ_MS, #0           
-    
-    ; Atualiza Centena MS (Display Meio)
-    INC DIG_CEN_MS
-    MOV A, DIG_CEN_MS
-    CJNE A, #10, SAIDA_ISR
-    MOV DIG_CEN_MS, #0
-    
-    ; Atualiza Segundos (Display Esquerda)
-    INC DIG_SEC
-    MOV A, DIG_SEC
-    CJNE A, #10, SAIDA_ISR
-    MOV DIG_SEC, #0              
+    INC CONTADOR_10MS
+    MOV A, CONTADOR_10MS
+    CJNE A, #10, Exit
+    MOV CONTADOR_10MS, #0
 
-SAIDA_ISR:
-    POP ACC
+    INC CONTADOR_100ms           
+    MOV A, CONTADOR_100ms        
+    CJNE A, #10, Exit 
+    MOV CONTADOR_100ms, #0         
+ 
+    INC CONTADOR_10s
+    MOV A, CONTADOR_10s
+    CJNE A, #10, Exit
+    MOV CONTADOR_10s, #0
+
+Exit: 
     POP PSW
+    POP ACC
     RETI
 
-; ===================================================================
-; SUBROTINAS
-; ===================================================================
-WR_7SEG:
-    MOV DPTR, #TAB_7SEG
-    MOVC A, @A+DPTR
-    MOV P1, A
+
+WR_7SEG: 
+    PUSH    ACC
+    MOV     DPTR, #TAB_7SEG
+    MOVC    A, @A+DPTR       
+    MOV     P1, A            
+    POP     ACC
     RET
 
-DELAY_MUX:
-    ; Ajuste este valor conforme a velocidade do seu PC
-         
-    MOV R7, #100      
-DL2:DJNZ R7, DL2
-    
-    RET
 
-TAB_7SEG:
+TAB_7SEG: 
     DB 01000000B  ; 0 
     DB 01111001B  ; 1 
     DB 00100100B  ; 2 
@@ -135,6 +99,5 @@ TAB_7SEG:
     DB 00000010B  ; 6 
     DB 01111000B  ; 7 
     DB 00000000B  ; 8 
-    DB 00010000B  ; 9 
-
+    DB 00010000B  ; 9
 END
