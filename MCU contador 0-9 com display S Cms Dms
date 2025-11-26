@@ -12,92 +12,92 @@ LJMP Timer0
 
 ORG 0030H
 MAIN:
-    MOV CONTADOR_250US, #40
-    MOV CONTADOR_10MS, #0  
-    MOV CONTADOR_100ms, #0  
-    MOV CONTADOR_10s, #0   
-    
+    MOV CONTADOR_250US,#40
+    MOV CONTADOR_10MS,#0
+    MOV CONTADOR_100ms,#0
+    MOV CONTADOR_10s,#0
+
     ; Configurar Timer 0
     MOV TMOD, #02H
-    MOV TH0, #VALOR_TH0       
-    MOV TL0, #VALOR_TH0       
+    MOV TH0, #VALOR_TH0
+    MOV TL0, #VALOR_TH0
 
     ; Exibe 0
     MOV P3, #0FFH
 
-    SETB ET0                  
-    SETB EA                    
+    SETB ET0
+    SETB EA
     SETB TR0
 
 
-LOOP: 
-    ; Exibe Dezenas MS 
-    MOV P3, #0FFH             
-    MOV A, CONTADOR_DISPLAY  
+LOOP:
+    ; Exibe Dezenas MS
+    MOV P3, #0FFH
+    MOV A, CONTADOR_DISPLAY
     LCALL WR_7SEG
-    CLR P3.3                 
+    CLR P3.3
 
-    ; Exibe Centenas MS 
-    MOV P3, #0FFH            
-    MOV A, CONTADOR_10MS      
+    ; Exibe Centenas MS
+    MOV P3, #0FFH
+    MOV A, CONTADOR_10MS
     LCALL WR_7SEG
-    CLR P3.2  
+    CLR P3.2
 
-    ; Exibe Segundos 
-    MOV P3, #0FFH             
+    ; Exibe Segundos
+    MOV P3, #0FFH
     MOV A, CONTADOR_10s
     LCALL WR_7SEG
-    CLR P3.1  
+    CLR P3.1
 
     SJMP LOOP
 
 
-Timer0: 
+Timer0:
     PUSH ACC
     PUSH PSW
-    
-    DJNZ CONTADOR_250US, Exit 
-    MOV CONTADOR_250US, #40   
+
+    DJNZ CONTADOR_250US, Exit
+    MOV CONTADOR_250US,#40
 
     INC CONTADOR_10MS
     MOV A, CONTADOR_10MS
-    CJNE A, #10, Exit
-    MOV CONTADOR_10MS, #0
+    CJNE A,#10,Exit
+    MOV CONTADOR_10MS,#0
 
-    INC CONTADOR_100ms           
-    MOV A, CONTADOR_100ms        
-    CJNE A, #10, Exit 
-    MOV CONTADOR_100ms, #0         
+    INC CONTADOR_100ms
+    MOV A, CONTADOR_100ms
+    CJNE A,#10,Exit
+    MOV CONTADOR_100ms,#0
  
     INC CONTADOR_10s
     MOV A, CONTADOR_10s
-    CJNE A, #10, Exit
-    MOV CONTADOR_10s, #0
+    CJNE A,#10,Exit
+    MOV CONTADOR_10s,#0
 
-Exit: 
+Exit:
     POP PSW
     POP ACC
     RETI
 
 
-WR_7SEG: 
+WR_7SEG:
     PUSH    ACC
     MOV     DPTR, #TAB_7SEG
-    MOVC    A, @A+DPTR       
-    MOV     P1, A            
+    MOVC    A, @A+DPTR
+    MOV     P1, A
     POP     ACC
     RET
 
 
-TAB_7SEG: 
-    DB 01000000B  ; 0 
-    DB 01111001B  ; 1 
-    DB 00100100B  ; 2 
-    DB 00110000B  ; 3 
-    DB 00011001B  ; 4 
-    DB 00010010B  ; 5 
-    DB 00000010B  ; 6 
-    DB 01111000B  ; 7 
-    DB 00000000B  ; 8 
+TAB_7SEG:
+    DB 01000000B  ; 0
+    DB 01111001B  ; 1
+    DB 00100100B  ; 2
+    DB 00110000B  ; 3
+    DB 00011001B  ; 4
+    DB 00010010B  ; 5
+    DB 00000010B  ; 6
+    DB 01111000B  ; 7
+    DB 00000000B  ; 8
     DB 00010000B  ; 9
 END
