@@ -12,7 +12,7 @@ ROT: EXEMPLO DE PUSH/CALL
      PUSH B
      
      MOV B,#10
-     MUL AB ( B é alto, A é baixo) 
+     MUL AB (no resultado da multiplicação B é parte alto, A é parte baixo) 
      POP B
 
      RET
