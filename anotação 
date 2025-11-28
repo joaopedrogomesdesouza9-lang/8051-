@@ -16,4 +16,25 @@ ROT: EXEMPLO DE PUSH/CALL
      POP B
 
      RET
- OBS: TODO POP SÓ PODE EXISTIR DEPOIS DE UM PUSH 
+ OBS: TODO POP SÓ PODE EXISTIR DEPOIS DE UM PUSH
+
+ Transcrição das Anotações
+Com base na imagem do slide, a seguir está a transcrição das anotações apresentadas, focando no que parece ser conteúdo técnico sobre conversão analógica/digital (ADC) e digital/analógica (DAC) e cálculos relacionados:
+ADC \rightarrow HEXADECIMAL (x bits)
+DAC \rightarrow Sinal analógico em função de HEXADECIMAL (x bits)
+| Analógico | Digital (Hexadecimal) |
+|---|---|
+| 0 mm | \rightarrow 00h |
+| 25 mm | \rightarrow 7Fh ou 80h |
+| 50 mm | \rightarrow FFh |
+| 256 | = \text{100h} |
+Cálculos / Expressões:
+Divisão (Aritmética):
+ *  *  * Variável:
+ * Entendendo a Alegoria
+Como você pediu, vou dar uma explicação simples e por alegoria, que é o tema central dessa anotação: A Conversão Analógico-Digital (ADC) e Digital-Analógica (DAC).
+Imagine que você tem um termômetro de mercúrio (o Sinal Analógico) e ele mede a temperatura de 0°C a 50°C. O mercúrio sobe de forma contínua, sem degraus.
+O ADC (Conversor Analógico-Digital) é como se fosse um tradutor que pega essa altura contínua do mercúrio (o sinal analógico, como os "50 mm" ou "0 mm") e a transforma em um número exato para o computador (o Hexadecimal "FFh" ou "00h").
+ * Alegoria: Se o mercúrio sobe até o teto (50 mm), o tradutor diz: "Cheio! FF\text{h}". Se ele está no chão (0 mm), ele diz: "Vazio! 00\text{h}". O número 80\text{h} (metade, 128) seria a metade da escada.
+O DAC (Conversor Digital-Analógico) faz o caminho inverso: ele pega o número do computador (80\text{h}) e o transforma de volta em algo do "mundo real", como a posição de um ponteiro ou, no exemplo, o movimento em milímetros.
+Gostaria que eu detalhasse a função de algum desses cálculos (como a fórmula de interpolação x = (50 * Y * 10) / 100\text{h}) ou explicasse melhor os termos como Hexadecimal? 
