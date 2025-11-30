@@ -1,0 +1,185 @@
+;----------------------------
+; Definições de pinos
+;----------------------------
+COL0        EQU P0.6
+COL1        EQU P0.5
+COL2        EQU P0.4
+ROW0        EQU P0.3
+ROW1        EQU P0.2
+ROW2        EQU P0.1
+ROW3        EQU P0.0
+
+ULTIMA_TECLA    EQU 50H          ; último código exibido
+ESTADO_TECLAS   EQU 51H          ; bloco de 12 bytes (teclas 1..12)
+
+            ORG 00H
+            LJMP    PRINCIPAL
+
+            ORG 30H
+
+;----------------------------
+; Programa principal
+;----------------------------
+PRINCIPAL:
+            MOV     ULTIMA_TECLA, #00H  ; display apagado inicialmente
+
+            ; Zera flags das teclas
+            MOV     R0, #ESTADO_TECLAS
+            MOV     R1, #12
+ZERAR_ESTADOS:
+            MOV     @R0, #00H
+            INC     R0
+            DJNZ    R1, ZERAR_ESTADOS
+
+            CLR     A
+            ACALL   ESCREVE_7SEG
+
+LOOP_PRINCIPAL:
+            ACALL   VARRE_LINHA0
+            ACALL   VARRE_LINHA1
+            ACALL   VARRE_LINHA2
+            ACALL   VARRE_LINHA3
+
+            MOV     A, ULTIMA_TECLA
+            ACALL   ESCREVE_7SEG
+            SJMP    LOOP_PRINCIPAL
+
+;----------------------------
+; Varredura das linhas
+;----------------------------
+VARRE_LINHA0:
+            CLR     ROW0
+            MOV     A, #01H
+            ACALL   VERIFICA_COL0      ; tecla 1
+            MOV     A, #02H
+            ACALL   VERIFICA_COL1      ; tecla 2
+            MOV     A, #03H
+            ACALL   VERIFICA_COL2      ; tecla 3
+            SETB    ROW0
+            RET
+
+VARRE_LINHA1:
+            CLR     ROW1
+            MOV     A, #04H
+            ACALL   VERIFICA_COL0      ; tecla 4
+            MOV     A, #05H
+            ACALL   VERIFICA_COL1      ; tecla 5
+            MOV     A, #06H
+            ACALL   VERIFICA_COL2      ; tecla 6
+            SETB    ROW1
+            RET
+
+VARRE_LINHA2:
+            CLR     ROW2
+            MOV     A, #07H
+            ACALL   VERIFICA_COL0      ; tecla 7
+            MOV     A, #08H
+            ACALL   VERIFICA_COL1      ; tecla 8
+            MOV     A, #09H
+            ACALL   VERIFICA_COL2      ; tecla 9
+            SETB    ROW2
+            RET
+
+VARRE_LINHA3:
+            CLR     ROW3
+            MOV     A, #0AH
+            ACALL   VERIFICA_COL0      ; tecla *
+            MOV     A, #0BH
+            ACALL   VERIFICA_COL1      ; tecla 0
+            MOV     A, #0CH
+            ACALL   VERIFICA_COL2      ; tecla #
+            SETB    ROW3
+            RET
+
+;----------------------------
+; Teste das colunas
+;----------------------------
+VERIFICA_COL0:
+            JNB     COL0, COL0_PRESSIONADA
+            ACALL   TECLA_SOLTA
+            RET
+COL0_PRESSIONADA:
+            ACALL   TECLA_PRESSIONADA
+            RET
+
+VERIFICA_COL1:
+            JNB     COL1, COL1_PRESSIONADA
+            ACALL   TECLA_SOLTA
+            RET
+COL1_PRESSIONADA:
+            ACALL   TECLA_PRESSIONADA
+            RET
+
+VERIFICA_COL2:
+            JNB     COL2, COL2_PRESSIONADA
+            ACALL   TECLA_SOLTA
+            RET
+COL2_PRESSIONADA:
+            ACALL   TECLA_PRESSIONADA
+            RET
+
+;----------------------------
+; Tratamento de pressões e solturas
+;----------------------------
+TECLA_PRESSIONADA:
+            PUSH    ACC
+            ACALL   OBTEM_PTR_TECLA
+            MOV     A, @R0
+            JNZ     TP_SAIDA          ; já estava pressionada
+            MOV     @R0, #01H         ; marca como pressionada
+            POP     ACC
+            MOV     ULTIMA_TECLA, A
+            RET
+TP_SAIDA:
+            POP     ACC
+            RET
+
+TECLA_SOLTA:
+            PUSH    ACC
+            ACALL   OBTEM_PTR_TECLA
+            MOV     A, @R0
+            JZ      TS_SAIDA
+            MOV     @R0, #00H         ; marca como solta
+TS_SAIDA:
+            POP     ACC
+            RET
+
+; Converte código da tecla (1..12) em ponteiro para ESTADO_TECLAS
+OBTEM_PTR_TECLA:
+            MOV     R6, A
+            DEC     R6
+            MOV     A, #ESTADO_TECLAS
+            ADD     A, R6
+            MOV     R0, A
+            RET
+
+;----------------------------
+; Escrita no display de 7 segmentos
+;----------------------------
+ESCREVE_7SEG:
+            PUSH    ACC
+            MOV     DPTR, #TABELA_7SEG
+            MOVC    A, @A+DPTR
+            MOV     P1, A
+            POP     ACC
+            RET
+
+;----------------------------
+; Tabela de códigos do display
+;----------------------------
+TABELA_7SEG:
+            DB 11111111B  ; 0  -> display apagado
+            DB 11111001B  ; 1
+            DB 10100100B  ; 2
+            DB 10110000B  ; 3
+            DB 10011001B  ; 4
+            DB 10010010B  ; 5
+            DB 10000010B  ; 6
+            DB 11111000B  ; 7
+            DB 10000000B  ; 8
+            DB 10010000B  ; 9
+            DB 01111111B  ; *  -> apenas o ponto dp
+            DB 11000000B  ; 0  -> segmento g apagado
+            DB 10111111B  ; #  -> somente segmento g
+
+            END
