@@ -1,0 +1,16 @@
+INTR    EQU P3.2
+WR      EQU P3.6
+RD      EQU P3.7
+
+        ORG     0H
+        ; INICIALIZAÇÃO
+MAIN:   
+        ; INICIAR CONVERSÃO
+        CLR     WR
+        SETB    WR     ; TOOGLE WR!!!
+        JB      INTR, $
+        ; INTR = 0 -> CONVERTEU!!!
+        CLR     RD
+        MOV     R3, P2
+        SETB    RD
+        JMP     MAIN
