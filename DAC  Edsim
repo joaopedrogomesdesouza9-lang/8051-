@@ -1,0 +1,20 @@
+WR     EQU P0.7
+
+ORG    0H
+CLR    WR
+
+MAIN:
+MOV    P1, #0FFH
+CALL   DELAY
+MOV    P1, #7FH
+CALL   DELAY
+MOV    P1, #3FH
+CALL   DELAY
+JMP    MAIN
+
+DELAY:
+PUSH   B
+MOV    B, #0
+DJNZ   B, $
+POP    B
+RET
