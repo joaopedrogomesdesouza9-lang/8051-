@@ -1,7 +1,7 @@
 WR EQU P0.7
 
 ORG 00H
-
+       CLR WR
        MOV A,#128
 
 MAIN:
