@@ -16,7 +16,7 @@ SUBIDA:
 
 DESCIDA:
        MOV P1,A
-       SUB A,#10
+       SUBB A,#10
        JNC DESCIDA
 
        CLR C 
