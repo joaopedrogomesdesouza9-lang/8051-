@@ -1,0 +1,24 @@
+WR EQU P0.7
+
+ORG 00H
+
+       MOV A,#128
+
+MAIN:
+
+SUBIDA:
+       MOV P1,A
+       ADD A,#10
+       JNC SUBIDA
+
+       CLR C
+       MOV A,#255
+
+DESCIDA:
+       MOV P1,A
+       SUB A,#10
+       JNC DESCIDA
+
+       CLR C 
+       CLR A
+       JMP MAIN
