@@ -1,0 +1,81 @@
+INTR EQU P3.2
+RD EQU P3.7
+WR EQU P3.6 
+VALOR_TH0 EQU 06 ; 256 - 250 = 6
+SAIDA EQU 2
+
+ORG 0H
+JMP INICIO 
+
+ORG 000BH         
+LJMP MAIN
+
+INICIO:
+   ; Configurar Timer 0
+    MOV TMOD, #02H
+    MOV TH0, #VALOR_TH0       
+    MOV TL0, #VALOR_TH0 
+    
+    SETB ET0                  
+    SETB EA                    
+    SETB TR0 
+
+ATUALIZA_DISPLAY:
+
+    ; 1. Exibir INTEIRO no Display 3 (Mais à esquerda)
+    ; Seleciona Disp 3 (P3.4=1, P3.3=1)
+    SETB P3.4
+    SETB P3.3
+    LCALL WR_7SEG   
+   
+    ; 2. Exibir DÈCIMO no Display 2
+    ; Seleciona Disp 2 (P3.4=1, P3.3=0)
+    SETB P3.4
+    CLR P3.3
+    LCALL WR_7SEG
+
+    ; 3. ExiBE CENTÈSIMO no Display 1
+    ; Seleciona Disp 1 (P3.4=0, P3.3=1)
+    CLR P3.4
+    SETB P3.3
+    LCALL WR_7SEG
+ 
+    JMP ATUALIZA_DISPLAY 
+   
+ 
+MAIN:
+     DJNZ CONTADOR, SAIDA
+     ACALL LE_ADC
+     MOV B,A
+SAIDA:
+     RETI
+
+  ; ROTINA PARA LER ADC
+LE_ADC:
+     CLR  WR
+     SETB WR
+     JB   INTR,$
+     CLR  RD
+     MOV  A,P2
+     SETB RD
+     RET
+
+WR_7SEG:
+    MOV     DPTR, #TAB_7SEG
+    MOVC    A, @A+DPTR 
+    MOV     P1, A 
+    RET
+
+TAB_7SEG:
+    DB 01000000B  ; 0 
+    DB 01111001B  ; 1 
+    DB 00100100B  ; 2 
+    DB 00110000B  ; 3 
+    DB 00011001B  ; 4 
+    DB 00010010B  ; 5 
+    DB 00000010B  ; 6 
+    DB 01111000B  ; 7 
+    DB 00000000B  ; 8 
+    DB 00010000B  ; 9 
+
+END
