@@ -1,3 +1,6 @@
+O High Byte (Registrador B,nesse caso) armazena quantas vezes o número 256(2^n) cabe inteiro no resultado, sendo a parte inteira da divisão.
+
+
 INTR EQU P3.2
 RD EQU P3.7
 WR EQU P3.6 
