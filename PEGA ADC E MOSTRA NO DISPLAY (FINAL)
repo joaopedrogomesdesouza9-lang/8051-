@@ -30,35 +30,29 @@ INICIO:
 
 ATUALIZA_DISPLAY:
 
-    ;Exibir INTEIRO no Display 3 
+    ;Exibir INTEIRO no Display 3 (P3.4=1, P3.3=1)
+    SETB P3.4
+    SETB P3.3
+    MOV P1, #0FFH
     MOV A, DIG_INT
     LCALL WR_7SEG
-    MOV P1, A
+    CLR P1
     
-    ; Seleciona Display 3 (P3.4=1, P3.3=1)
-    SETB P3.4
-    SETB P3.3
-    LCALL DELAY_DISP
-    
-    ;Exibir CENTENA no Display 2
-    MOV A, DIG_CENT
-    LCALL WR_7SEG
-    MOV P1, A
-    
-    ; Seleciona Display 2 (P3.4=1, P3.3=0)
+    ;Exibir CENTENA no Display 2 (P3.4=1, P3.3=0)
     SETB P3.4
     CLR P3.3
-    LCALL DELAY_DISP
-
-    ;Exibir DEZENA no Display 1
-    MOV A, DIG_DEZ
+    MOV P1, #0FFH
+    MOV A, DIG_CENT
     LCALL WR_7SEG
-    MOV P1, A
+    CLR P1
     
-    ; Seleciona Display 1 (P3.4=0, P3.3=1)
+    ;Exibir DEZENA no Display 1 (P3.4=0, P3.3=1)
     CLR P3.4
     SETB P3.3
-    LCALL DELAY_DISP
+    MOV P1, #0FFH
+    MOV A, DIG_DEZ
+    LCALL WR_7SEG
+    CLR P1
     
     JMP ATUALIZA_DISPLAY
 
@@ -113,8 +107,11 @@ CONVERTE_VALOR:
 
 
 WR_7SEG:
-    MOV DPTR, #TAB_7SEG
-    MOVC A, @A+DPTR
+    PUSH    ACC
+    MOV     DPTR, #TAB_7SEG
+    MOVC    A, @A+DPTR
+    MOV     P1, A
+    POP     ACC
     RET
 
 DELAY_DISP:
