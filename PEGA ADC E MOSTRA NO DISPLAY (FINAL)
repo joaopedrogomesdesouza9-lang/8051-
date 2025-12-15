@@ -25,34 +25,36 @@ INICIO:
     SETB ET0
     SETB EA
     SETB TR0
+    
+    MOV DIG_INT,#0
+    MOV DIG_CENT,#0
+    MOV DIG_DEZ,#0
 
 ; Loop Principal: Fica apenas atualizando os displays
 
 ATUALIZA_DISPLAY:
 
-    ;Exibir INTEIRO no Display 3 (P3.4=1, P3.3=1)
-    SETB P3.4
+     ;Exibir DEZENA no Display 1 (P3.4=0, P3.3=1)
+    CLR P3.4
     SETB P3.3
-    MOV P1, #0FFH
-    MOV A, DIG_INT
+    MOV A, DIG_DEZ
     LCALL WR_7SEG
-    CLR P1
+    LCALL DELAY_DISP
+
     
     ;Exibir CENTENA no Display 2 (P3.4=1, P3.3=0)
     SETB P3.4
     CLR P3.3
-    MOV P1, #0FFH
     MOV A, DIG_CENT
     LCALL WR_7SEG
-    CLR P1
-    
-    ;Exibir DEZENA no Display 1 (P3.4=0, P3.3=1)
-    CLR P3.4
+    LCALL DELAY_DISP
+
+    ;Exibir INTEIRO no Display 3 (P3.4=1, P3.3=1)
+    SETB P3.4
     SETB P3.3
-    MOV P1, #0FFH
-    MOV A, DIG_DEZ
+    MOV A, DIG_INT
     LCALL WR_7SEG
-    CLR P1
+    LCALL DELAY_DISP
     
     JMP ATUALIZA_DISPLAY
 
@@ -107,11 +109,9 @@ CONVERTE_VALOR:
 
 
 WR_7SEG:
-    PUSH    ACC
     MOV     DPTR, #TAB_7SEG
     MOVC    A, @A+DPTR
     MOV     P1, A
-    POP     ACC
     RET
 
 DELAY_DISP:
