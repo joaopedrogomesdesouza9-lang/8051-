@@ -29,6 +29,8 @@ INICIO:
     MOV DIG_INT,#0
     MOV DIG_CENT,#0
     MOV DIG_DEZ,#0
+    MOV CONTADOR_250US, #40
+    MOV CONTADOR_10MS, #50
 
 ; Loop Principal: Fica apenas atualizando os displays
 
@@ -73,8 +75,8 @@ TIMER0:
     ACALL CONVERTE_VALOR
 
 EXIT:
-    POP PSW
     POP ACC
+    POP PSW
     RETI
 
  
