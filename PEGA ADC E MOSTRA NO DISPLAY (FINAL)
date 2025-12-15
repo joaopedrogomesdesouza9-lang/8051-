@@ -1,0 +1,137 @@
+INTR EQU P3.2
+RD   EQU P3.7
+WR   EQU P3.6
+
+DIG_INT  EQU 30H
+DIG_CENT EQU 31H
+DIG_DEZ EQU 32H
+CONTADOR_250US EQU 33H ; 40x250us=10ms
+CONTADOR_10MS EQU 34H ; 50x10ms
+VALOR_TH0 EQU 06; 256-6=250us
+
+ORG 0H
+    JMP INICIO
+
+ORG 000BH
+    LJMP ISR_TIMER0
+
+INICIO:
+
+    ; Configurar Timer 0
+    MOV TMOD, #02H    
+    MOV TH0, #VALOR_TH0
+    MOV TL0, #VALOR_TH0
+   
+    SETB ET0
+    SETB EA
+    SETB TR0
+
+; Loop Principal: Fica apenas atualizando os displays
+
+ATUALIZA_DISPLAY:
+
+    ;Exibir INTEIRO no Display 3 
+    MOV A, DIG_INT
+    LCALL WR_7SEG
+    MOV P1, A
+    
+    ; Seleciona Display 3 (P3.4=1, P3.3=1)
+    SETB P3.4
+    SETB P3.3
+    LCALL DELAY_DISP
+    
+    ;Exibir CENTENA no Display 2
+    MOV A, DIG_CENT
+    LCALL WR_7SEG
+    MOV P1, A
+    
+    ; Seleciona Display 2 (P3.4=1, P3.3=0)
+    SETB P3.4
+    CLR P3.3
+    LCALL DELAY_DISP
+
+    ;Exibir DEZENA no Display 1
+    MOV A, DIG_DEZ
+    LCALL WR_7SEG
+    MOV P1, A
+    
+    ; Seleciona Display 1 (P3.4=0, P3.3=1)
+    CLR P3.4
+    SETB P3.3
+    LCALL DELAY_DISP
+    
+    JMP ATUALIZA_DISPLAY
+
+;Rotina interrupçao do timer
+TIMER0:
+    PUSH PSW
+    PUSH ACC
+
+    DJNZ CONTADOR_250US, EXIT
+    MOV CONTADOR_250US, #40          
+    
+    DJNZ CONTADOR_10MS, Exit
+    MOV CONTADOR_10MS, #50
+
+    ACALL LE_ADC
+    ACALL CONVERTE_VALOR
+
+EXIT:
+    POP PSW
+    POP ACC
+    RETI
+
+ 
+LE_ADC:
+    CLR WR
+    SETB WR
+    JB INTR, $
+    CLR RD
+    MOV A, P2
+    SETB RD
+    RET
+
+
+CONVERTE_VALOR:
+
+    ; Fórmula: (ADC * 5) / 256
+    MOV B, #5
+    MUL AB
+    MOV DIG_INT, B
+    
+    ; Fórmula: (Resto * 10) / 256
+    MOV B, #10
+    MUL AB
+    MOV DIG_CENT, B
+    
+    ; Fórmula: (Novo Resto * 10) / 256
+    MOV B, #10
+    MUL AB
+    MOV DIG_DEZ, B
+    
+    RET
+
+
+WR_7SEG:
+    MOV DPTR, #TAB_7SEG
+    MOVC A, @A+DPTR
+    RET
+
+DELAY_DISP:
+    MOV R7, #50
+    DJNZ R7, $
+    RET
+
+TAB_7SEG:
+    DB 01000000B  ; 0 
+    DB 01111001B  ; 1 
+    DB 00100100B  ; 2 
+    DB 00110000B  ; 3 
+    DB 00011001B  ; 4 
+    DB 00010010B  ; 5 
+    DB 00000010B  ; 6 
+    DB 01111000B  ; 7 
+    DB 00000000B  ; 8 
+    DB 00010000B  ; 9 
+
+END
