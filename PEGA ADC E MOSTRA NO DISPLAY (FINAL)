@@ -92,7 +92,7 @@ LE_ADC:
 
 CONVERTE_VALOR:
 
-    ; Fórmula: (ADC * 5) / 256
+    ; Fórmula: (ADC * 5 volts) / 256
     MOV B, #5
     MUL AB
     MOV DIG_INT, B
