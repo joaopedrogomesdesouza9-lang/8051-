@@ -91,6 +91,7 @@ LE_ADC:
 
 
 CONVERTE_VALOR:
+    ;adequa valor lido no adc (bits) para mostrar entre 0 e 5v  
 
     ; Fórmula: (ADC * 5 volts) / 256
     MOV B, #5
