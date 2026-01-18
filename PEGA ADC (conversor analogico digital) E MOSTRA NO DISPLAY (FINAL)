@@ -8,7 +8,7 @@ DIG_DEZ EQU 32H
 CONTADOR_250US EQU 33H ; 40x250us=10ms
 CONTADOR_10MS EQU 34H ; 50x10ms=500ms
 VALOR_TH0 EQU 06; 256-6=250us
-
+-----------------------------------------------------------------------------------------
 ORG 0H
     JMP INICIO
 
@@ -31,7 +31,7 @@ INICIO:
     MOV DIG_DEZ,#0
     MOV CONTADOR_250US, #40
     MOV CONTADOR_10MS, #50
-
+---------------------------------------------------------------------------------------------
 ; Loop Principal: Fica apenas atualizando os displays
 
 ATUALIZA_DISPLAY:
@@ -60,6 +60,7 @@ ATUALIZA_DISPLAY:
     
     JMP ATUALIZA_DISPLAY
 
+---------------------------------------------------------------------------------------------
 ;Rotina interrupçao do timer
 TIMER0:
     PUSH PSW
@@ -79,7 +80,7 @@ EXIT:
     POP PSW
     RETI
 
- 
+------------------------------------------------------------------------------------------------------- 
 LE_ADC:
     CLR WR
     SETB WR
@@ -89,39 +90,42 @@ LE_ADC:
     SETB RD
     RET
 
-
+-----------------------------------------------------------------------------------------------------------------------
 CONVERTE_VALOR:
     ;adequa valor lido no adc (bits) para mostrar entre 0 e 5v  
+    ; (ADC * Vref / 2^nbits)
+    ; nessa formula o A e B sao multiplicados e no hight bit nesse caso o B fica a parte inteira da divisao 
+    ; (o mesmo que pegar o resultado de AB e dividir por 2^nbits) e a parte decimal no low bit nesse caso A
 
     ; Fórmula: (ADC * 5 volts) / 256
     MOV B, #5
     MUL AB
     MOV DIG_INT, B
     
-    ; Fórmula: (Resto * 10) / 256
+    ; Fórmula: (Resto (A) * 10) / 256
     MOV B, #10
     MUL AB
     MOV DIG_CENT, B
     
-    ; Fórmula: (Novo Resto * 10) / 256
+    ; Fórmula: (Novo Resto (A) * 10) / 256
     MOV B, #10
     MUL AB
     MOV DIG_DEZ, B
     
     RET
 
-
+----------------------------------------------------------------------------------------------------------
 WR_7SEG:
     MOV     DPTR, #TAB_7SEG
     MOVC    A, @A+DPTR
     MOV     P1, A
     RET
-
+-------------------------------------------------------------------------------------------------
 DELAY_DISP:
     MOV R7, #50
     DJNZ R7, $
     RET
-
+-----------------------------------------------------------------------------------------------------
 TAB_7SEG:
     DB 01000000B  ; 0 
     DB 01111001B  ; 1 
