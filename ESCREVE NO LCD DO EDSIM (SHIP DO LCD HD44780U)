@@ -1,4 +1,4 @@
-; LCD 16x2 - JOAO PEDRO GOMES DE SOUZA
+; LCD 16x2
 ; P1.7-P1.4 = DB7-DB4, P1.3 = RS, P1.2 = E
 
 RS  EQU P1.3
@@ -143,11 +143,9 @@ ENVIA_DADOS_LCD:
     LCALL ESPERA_1MS
     RET
 
-; Gera pulso no pino Enable para LCD ler os dados
+
 PULSO_ENABLE:
     SETB E
-    NOP
-    NOP
     NOP
     CLR E
     RET
