@@ -142,7 +142,7 @@ PULSO_ENABLE:
 
 ; ========== ROTINAS DE TEMPO ==========
 
-; Espera aproximadamente 1 milissegundo
+
 ESPERA_1MS:
  MOV R6, #2
 E1: MOV R7, #250
@@ -150,14 +150,14 @@ E1: MOV R7, #250
  DJNZ R6, E1
  RET
 
-; Espera aproximadamente 5 milissegundos
+
 ESPERA_5MS:
  MOV R5, #5
 E5: LCALL ESPERA_1MS
  DJNZ R5, E5
  RET
 
-; Espera aproximadamente 20 milissegundos
+
 ESPERA_20MS:
  MOV R5, #20
 E20: LCALL ESPERA_1MS
