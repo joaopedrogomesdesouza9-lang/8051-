@@ -13,7 +13,7 @@ ORG 0000H
 ORG 000BH                  
     LJMP TIMER0
 
-ORG 0030H
+ORG 0031H
 INICIO:
 
     ; Configura Timer 0 Modo 2 
