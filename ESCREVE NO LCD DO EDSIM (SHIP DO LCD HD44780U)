@@ -1,14 +1,28 @@
 ; LCD 16x2
-; P1.7-P1.4 = DB7-DB4, P1.3 = RS, P1.2 = E
+    ; P1.7-P1.4 = DB7-DB4, P1.3 = RS, P1.2 = E
+    ; 8051 @ 12MHz (1 ciclo = 1µs)
+    ; Timer 0 Modo 2 
 
-RS  EQU P1.3
-E   EQU P1.2
+RS       EQU P1.3
+E        EQU P1.2
+CONTADOR EQU 30H     
 
 ORG 0000H
     LJMP INICIO
 
+ORG 000BH                  
+    LJMP TIMER0
+
 ORG 0030H
 INICIO:
+
+    ; Configura Timer 0 Modo 2 
+    MOV TMOD, #02H          
+    MOV TH0, #156           ; 256-156 =100µs 
+    MOV TL0, #156
+    SETB EA                 
+    SETB ET0                
+
     LCALL CONFIGURA_LCD
     
     ; Linha 1 - "JOAO PEDRO"
@@ -71,44 +85,58 @@ INICIO:
     
     SJMP $
 
+
 ; ========== ROTINAS DO LCD ==========
 
-
 CONFIGURA_LCD:
-    LCALL ESPERA_20MS
+    LCALL ESPERA_16MS      
 
-  ; RS = 0, R/W = 0
-  ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
-  ;  0    0    1    DL   N    F    x    x
+    ; RS = 0, R/W = 0
+    ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
+    ;  0    0    1    DL    x    x    x    x  
+    
+    MOV A, #30H             
+    LCALL ENVIA_COMANDO
+    LCALL ESPERA_5MS      
+    
+    MOV A, #30H             
+    LCALL ENVIA_COMANDO
+    LCALL ESPERA_100US      
+    
+    MOV A, #30H             
+    LCALL ENVIA_COMANDO
+
+    MOV A, #20H           
+    LCALL ENVIA_COMANDO
+    LCALL ESPERA_100US
 
     
+    ; Agora em modo 4 bits 
+    
+    ; RS = 0, R/W = 0
+    ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
+    ;  0    0    1    DL   N    F    x    x
+ 
     MOV A, #28H             ; 4 bits, 2 linhas, fonte 5x8
     LCALL ENVIA_COMANDO
-    LCALL ESPERA_5MS
     
-    MOV A, #28H
-    LCALL ENVIA_COMANDO
-    LCALL ESPERA_1MS
 
-
-  ; RS = 0, R/W = 0
-  ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
-  ;  0    0    0    0    1    D    C    B
+    ; RS = 0, R/W = 0
+    ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
+    ;  0    0    0    0    1    D    C    B
     
-    MOV A, #0CH             ; Display ligado, cursor desligado
+    MOV A, #0CH             ; Display ligado, cursor desligado 
     LCALL ENVIA_COMANDO
-
-
-    MOV A, #01H             ; Limpa tela
+    
+    MOV A, #01H             ; Limpa LCD
     LCALL ENVIA_COMANDO
-    LCALL ESPERA_5MS
-
-
-  ; RS = 0, R/W = 0
-  ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
-  ;  0    0    0    0    0    1   I/D   S
-  
-    MOV A, #06H             ; Cursor move para direita
+    
+    
+    ; RS = 0, R/W = 0
+    ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
+    ;  0    0    0    0    0    1   I/D   S
+    
+    MOV A, #06H             ; Cursor incrementa
     LCALL ENVIA_COMANDO
     RET
 
@@ -125,22 +153,21 @@ ESCREVE_LETRA:
 ; Envia os 8 bits em duas partes de 4 bits
 ENVIA_DADOS_LCD:
     PUSH ACC
-    ANL A, #0F0H            ; Pega os 4 bits altos
-    ANL P1, #0FH            ; Limpa parte alta de P1
-    ORL P1, A               ; Coloca no P1
-    MOV C, RS
-    MOV P1.3, C             ; Restaura RS
-    LCALL PULSO_ENABLE
-    
-    POP ACC
-    SWAP A                  ; Troca nibbles
-    ANL A, #0F0H            ; Pega os 4 bits baixos (agora em cima)
+    ANL A, #0F0H
     ANL P1, #0FH
     ORL P1, A
     MOV C, RS
     MOV P1.3, C
     LCALL PULSO_ENABLE
-    LCALL ESPERA_1MS
+    
+    POP ACC
+    SWAP A
+    ANL A, #0F0H
+    ANL P1, #0FH
+    ORL P1, A
+    MOV C, RS
+    MOV P1.3, C
+    LCALL PULSO_ENABLE
     RET
 
 
@@ -148,30 +175,44 @@ PULSO_ENABLE:
     SETB E
     NOP
     CLR E
+    NOP
     RET
 
-; ========== ROTINAS DE TEMPO ==========
 
-; Espera aproximadamente 1 milissegundo
+; ========== ROTINAS DE TEMPO  ==========
+
+TIMER0:
+    DJNZ CONTADOR, FIM
+    CLR TR0                 ; Para timer quando contador = 0
+FIM:
+    RETI
+
+
+ESPERA_TIMER:
+    SETB TR0              
+ESPERA_LOOP:
+    JB TR0, ESPERA_LOOP     
+    RET
+
+
+ESPERA_100US:
+    MOV CONTADOR, #1        ; 1 x 100µs
+    LCALL ESPERA_TIMER
+    RET
+
 ESPERA_1MS:
-    MOV R6, #2
-E1: MOV R7, #250
-    DJNZ R7, $
-    DJNZ R6, E1
+    MOV CONTADOR, #10       ; 10 x 100µs = 1ms
+    LCALL ESPERA_TIMER
     RET
 
-; Espera aproximadamente 5 milissegundos
 ESPERA_5MS:
-    MOV R5, #5
-E5: LCALL ESPERA_1MS
-    DJNZ R5, E5
+    MOV CONTADOR, #50       ; 50 x 100µs = 5ms
+    LCALL ESPERA_TIMER
     RET
 
-; Espera aproximadamente 20 milissegundos
-ESPERA_20MS:
-    MOV R5, #20
-E20: LCALL ESPERA_1MS
-    DJNZ R5, E20
+ESPERA_16MS:
+    MOV CONTADOR, #160      ; 160 x 100µs = 16ms
+    LCALL ESPERA_TIMER
     RET
 
 END
