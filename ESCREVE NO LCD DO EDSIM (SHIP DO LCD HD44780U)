@@ -76,7 +76,7 @@ CONFIGURA_LCD:
 
 ; RS = 0, R/W = 0
  ; DB7 DB6 DB5 DB4 DB3 DB2 DB1 DB0
- ; 0 0 1 DL N F x x
+ ;  0   0   1   DL  N   F   x   x
 
 MOV A, #28H ; 4 bits, 2 linhas, fonte 5x8
  LCALL ENVIA_COMANDO
@@ -88,7 +88,7 @@ MOV A, #28H
 
 ; RS = 0, R/W = 0
  ; DB7 DB6 DB5 DB4 DB3 DB2 DB1 DB0
- ; 0 0 0 0 1 D C B
+ ;  0   0   0   0   1   D   C   B
  
 MOV A, #0CH ; Display ligado, cursor desligado
  LCALL ENVIA_COMANDO
@@ -99,11 +99,12 @@ MOV A, #01H ; Limpa tela
 
 ; RS = 0, R/W = 0
  ; DB7 DB6 DB5 DB4 DB3 DB2 DB1 DB0
- ; 0 0 0 0 0 1 I/D S
+ ;  0   0   0   0   0   1  I/D  S
  
 MOV A, #06H ; Cursor move para direita
  LCALL ENVIA_COMANDO
  RET
+
 
 ENVIA_COMANDO:
  CLR RS
