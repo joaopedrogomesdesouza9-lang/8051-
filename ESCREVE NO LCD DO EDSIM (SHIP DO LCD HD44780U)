@@ -96,18 +96,18 @@ CONFIGURA_LCD:
     ;  0    0    1    DL    x    x    x    x  
     
     MOV A, #30H             
-    LCALL ENVIA_COMANDO
+    LCALL ENVIA_NIBBLE
     LCALL ESPERA_5MS      
     
     MOV A, #30H             
-    LCALL ENVIA_COMANDO
+    LCALL ENVIA_NIBBLE
     LCALL ESPERA_100US      
     
     MOV A, #30H             
-    LCALL ENVIA_COMANDO
+    LCALL ENVIA_NIBBLE
 
     MOV A, #20H           
-    LCALL ENVIA_COMANDO
+    LCALL ENVIA_NIBBLE
     LCALL ESPERA_100US
 
     
@@ -140,6 +140,14 @@ CONFIGURA_LCD:
     LCALL ENVIA_COMANDO
     RET
 
+
+ENVIA_NIBBLE:
+    CLR RS
+    ANL A, #0F0H
+    ANL P1, #0FH
+    ORL P1, A
+    LCALL PULSO_ENABLE
+    RET
 
 ENVIA_COMANDO:
     CLR RS
