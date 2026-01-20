@@ -1,167 +1,201 @@
 ; LCD 16x2
 ; P1.7-P1.4 = DB7-DB4, P1.3 = RS, P1.2 = E
+; 8051 @ 12MHz (1 ciclo = 1µs)
+; Timer 0 Modo 2 
 
-RS EQU P1.3
-E EQU P1.2
+RS       EQU P1.3
+E        EQU P1.2
+CONTADOR EQU 30H     
 
 ORG 0000H
+    LJMP INICIO
 
+ORG 000BH                  
+    LJMP TIMER0
+
+ORG 0030H
 INICIO:
- LCALL CONFIGURA_LCD
- 
-; Linha 1 - "JOAO PEDRO"
- MOV A, #83H
- LCALL ENVIA_COMANDO
- 
-MOV A, #'J'
- LCALL ESCREVE_LETRA
- MOV A, #'O'
- LCALL ESCREVE_LETRA
- MOV A, #'A'
- LCALL ESCREVE_LETRA
- MOV A, #'O'
- LCALL ESCREVE_LETRA
- MOV A, #' '
- LCALL ESCREVE_LETRA
- MOV A, #'P'
- LCALL ESCREVE_LETRA
- MOV A, #'E'
- LCALL ESCREVE_LETRA
- MOV A, #'D'
- LCALL ESCREVE_LETRA
- MOV A, #'R'
- LCALL ESCREVE_LETRA
- MOV A, #'O'
- LCALL ESCREVE_LETRA
- 
-; Linha 2 - "GOMES DE SOUZA"
- MOV A, #0C1H
- LCALL ENVIA_COMANDO
- 
-MOV A, #'G'
- LCALL ESCREVE_LETRA
- MOV A, #'O'
- LCALL ESCREVE_LETRA
- MOV A, #'M'
- LCALL ESCREVE_LETRA
- MOV A, #'E'
- LCALL ESCREVE_LETRA
- MOV A, #'S'
- LCALL ESCREVE_LETRA
- MOV A, #' '
- LCALL ESCREVE_LETRA
- MOV A, #'D'
- LCALL ESCREVE_LETRA
- MOV A, #'E'
- LCALL ESCREVE_LETRA
- MOV A, #' '
- LCALL ESCREVE_LETRA
- MOV A, #'S'
- LCALL ESCREVE_LETRA
- MOV A, #'O'
- LCALL ESCREVE_LETRA
- MOV A, #'U'
- LCALL ESCREVE_LETRA
- MOV A, #'Z'
- LCALL ESCREVE_LETRA
- MOV A, #'A'
- LCALL ESCREVE_LETRA
- 
-SJMP $
 
-; ========== ROTINAS FAZEM LCD ==========
+    ; Configura Timer 0 Modo 2 
+    MOV TMOD, #02H          
+    MOV TH0, #156           ; 256-156 = 100µs 
+    MOV TL0, #156
+    SETB EA                 
+    SETB ET0                
+
+    LCALL CONFIGURA_LCD
+    
+    ; Linha 1 - "JOAO PEDRO"
+    MOV A, #83H
+    LCALL ENVIA_COMANDO
+    
+    MOV A, #'J'
+    LCALL ESCREVE_LETRA
+    MOV A, #'O'
+    LCALL ESCREVE_LETRA
+    MOV A, #'A'
+    LCALL ESCREVE_LETRA
+    MOV A, #'O'
+    LCALL ESCREVE_LETRA
+    MOV A, #' '
+    LCALL ESCREVE_LETRA
+    MOV A, #'P'
+    LCALL ESCREVE_LETRA
+    MOV A, #'E'
+    LCALL ESCREVE_LETRA
+    MOV A, #'D'
+    LCALL ESCREVE_LETRA
+    MOV A, #'R'
+    LCALL ESCREVE_LETRA
+    MOV A, #'O'
+    LCALL ESCREVE_LETRA
+    
+    ; Linha 2 - "GOMES DE SOUZA"
+    MOV A, #0C1H
+    LCALL ENVIA_COMANDO
+    
+    MOV A, #'G'
+    LCALL ESCREVE_LETRA
+    MOV A, #'O'
+    LCALL ESCREVE_LETRA
+    MOV A, #'M'
+    LCALL ESCREVE_LETRA
+    MOV A, #'E'
+    LCALL ESCREVE_LETRA
+    MOV A, #'S'
+    LCALL ESCREVE_LETRA
+    MOV A, #' '
+    LCALL ESCREVE_LETRA
+    MOV A, #'D'
+    LCALL ESCREVE_LETRA
+    MOV A, #'E'
+    LCALL ESCREVE_LETRA
+    MOV A, #' '
+    LCALL ESCREVE_LETRA
+    MOV A, #'S'
+    LCALL ESCREVE_LETRA
+    MOV A, #'O'
+    LCALL ESCREVE_LETRA
+    MOV A, #'U'
+    LCALL ESCREVE_LETRA
+    MOV A, #'Z'
+    LCALL ESCREVE_LETRA
+    MOV A, #'A'
+    LCALL ESCREVE_LETRA
+    
+    SJMP $
+
+
+; ========== ROTINAS DO LCD ==========
 
 CONFIGURA_LCD:
- LCALL ESPERA_20MS
+    LCALL ESPERA_20MS
 
-; RS = 0, R/W = 0
- ; DB7 DB6 DB5 DB4 DB3 DB2 DB1 DB0
- ;  0   0   1   DL  N   F   x   x
+    ; RS = 0, R/W = 0
+  ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
+  ;  0    0    1    DL   N    F    x    x
 
-MOV A, #28H ; 4 bits, 2 linhas, fonte 5x8
- LCALL ENVIA_COMANDO
- LCALL ESPERA_5MS
- 
-MOV A, #28H
- LCALL ENVIA_COMANDO
- LCALL ESPERA_1MS
+    
+    MOV A, #28H             ; 4 bits, 2 linhas, fonte 5x8
+    LCALL ENVIA_COMANDO
+    LCALL ESPERA_5MS
+    
+    MOV A, #28H
+    LCALL ENVIA_COMANDO
+    LCALL ESPERA_1MS
 
-; RS = 0, R/W = 0
- ; DB7 DB6 DB5 DB4 DB3 DB2 DB1 DB0
- ;  0   0   0   0   1   D   C   B
- 
-MOV A, #0CH ; Display ligado, cursor desligado
- LCALL ENVIA_COMANDO
 
-MOV A, #01H ; Limpa tela
- LCALL ENVIA_COMANDO
- LCALL ESPERA_5MS
+  ; RS = 0, R/W = 0
+  ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
+  ;  0    0    0    0    1    D    C    B
+    
+    MOV A, #0CH             ; Display ligado, cursor desligado
+    LCALL ENVIA_COMANDO
 
-; RS = 0, R/W = 0
- ; DB7 DB6 DB5 DB4 DB3 DB2 DB1 DB0
- ;  0   0   0   0   0   1  I/D  S
- 
-MOV A, #06H ; Cursor move para direita
- LCALL ENVIA_COMANDO
- RET
+
+    MOV A, #01H             ; Limpa tela
+    LCALL ENVIA_COMANDO
+    LCALL ESPERA_5MS
+
+
+  ; RS = 0, R/W = 0
+  ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
+  ;  0    0    0    0    0    1   I/D   S
+  
+    MOV A, #06H             ; Cursor move para direita
+    LCALL ENVIA_COMANDO
+    RET
 
 
 ENVIA_COMANDO:
- CLR RS
- SJMP ENVIA_DADOS_LCD
+    CLR RS
+    SJMP ENVIA_DADOS_LCD
+
 
 ESCREVE_LETRA:
- SETB RS
+    SETB RS
+
 
 ; Envia os 8 bits em duas partes de 4 bits
 ENVIA_DADOS_LCD:
- PUSH ACC
- ANL A, #0F0H ; Pega os 4 bits altos
- ANL P1, #0FH ; Limpa parte alta de P1
- ORL P1, A ; Coloca no P1
- MOV C, RS
- MOV P1.3, C ; Restaura RS
- LCALL PULSO_ENABLE
- 
-POP ACC
- SWAP A ; Troca nibbles
- ANL A, #0F0H ; Pega os 4 bits baixos (agora em cima)
- ANL P1, #0FH
- ORL P1, A
- MOV C, RS
- MOV P1.3, C
- LCALL PULSO_ENABLE
- LCALL ESPERA_1MS
- RET
+    PUSH ACC
+    ANL A, #0F0H
+    ANL P1, #0FH
+    ORL P1, A
+    MOV C, RS
+    MOV P1.3, C
+    LCALL PULSO_ENABLE
+    
+    POP ACC
+    SWAP A
+    ANL A, #0F0H
+    ANL P1, #0FH
+    ORL P1, A
+    MOV C, RS
+    MOV P1.3, C
+    LCALL PULSO_ENABLE
+    LCALL ESPERA_1MS
+    RET
+
 
 PULSO_ENABLE:
- SETB E
- NOP
- CLR E
- RET
+    SETB E
+    NOP
+    CLR E
+    RET
 
-; ========== ROTINAS DE TEMPO ==========
+
+; ========== ROTINAS DO TIMER ==========
+
+TIMER0:
+    DJNZ CONTADOR, FIM_TIMER
+    CLR TR0
+FIM_TIMER:
+    RETI
+
+
+ESPERA_TIMER:
+    SETB TR0              
+ESPERA_LOOP:
+    JB TR0, ESPERA_LOOP     
+    RET
 
 
 ESPERA_1MS:
- MOV R6, #2
-E1: MOV R7, #250
- DJNZ R7, $
- DJNZ R6, E1
- RET
+    MOV CONTADOR, #10       ; 10 x 100µs = 1ms
+    LCALL ESPERA_TIMER
+    RET
 
 
 ESPERA_5MS:
- MOV R5, #5
-E5: LCALL ESPERA_1MS
- DJNZ R5, E5
- RET
+    MOV CONTADOR, #50       ; 50 x 100µs = 5ms
+    LCALL ESPERA_TIMER
+    RET
 
 
 ESPERA_20MS:
- MOV R5, #20
-E20: LCALL ESPERA_1MS
- DJNZ R5, E20
- RET
+    MOV CONTADOR, #200      ; 200 x 100µs = 20ms
+    LCALL ESPERA_TIMER
+    RET
 
 END
