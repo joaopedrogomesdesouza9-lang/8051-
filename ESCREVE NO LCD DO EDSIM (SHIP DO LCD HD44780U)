@@ -1,7 +1,6 @@
 ; LCD 16x2
 ; P1.7-P1.4 = DB7-DB4, P1.3 = RS, P1.2 = E
-; 8051 @ 12MHz (1 ciclo = 1µs)
-; Timer 0 Modo 2 
+
 
 RS       EQU P1.3
 E        EQU P1.2
