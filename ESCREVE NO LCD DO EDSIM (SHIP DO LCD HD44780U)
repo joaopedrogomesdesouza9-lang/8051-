@@ -25,7 +25,7 @@ INICIO:
     LCALL CONFIGURA_LCD
     
     ; Linha 1 - "JOAO PEDRO"
-    MOV A, #83H
+    MOV A, #83H ; DB7=1=80H + endereço da "casa" no LCD/coloca cursor manualmente 
     LCALL ENVIA_COMANDO
     
     MOV A, #'J'
