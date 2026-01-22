@@ -138,9 +138,9 @@ ESCREVE_LETRA:
 ; Envia os 8 bits em duas partes de 4 bits
 ENVIA_DADOS_LCD:
     PUSH ACC
-    ANL A, #0F0H
-    ANL P1, #0FH
-    ORL P1, A
+    ANL A, #0F0H ;limpa nibble baixo (and 1=mantém 0=apaga)
+    ANL P1, #0FH ;limpa nibble alto de P1
+    ORL P1, A ; soma lógica (0=mantém 1=altera/apaga)/envia os 4bits no niible alto de P1 e mantém o nibble baixo intacto 
     MOV C, RS
     MOV P1.3, C
     LCALL PULSO_ENABLE
@@ -159,7 +159,7 @@ ENVIA_DADOS_LCD:
 
 PULSO_ENABLE:
     SETB E
-    NOP
+    NOP; min 450ns para detectar mudança 1nop=1us
     CLR E
     RET
 
