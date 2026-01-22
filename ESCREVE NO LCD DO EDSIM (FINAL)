@@ -160,7 +160,7 @@ ESPERA_16MS:
 
 ; ====STRINGS====
 
-LINHA1: DB 'JOAO PEDRO', 0
-LINHA2: DB 'GOMES DE SOUZA', 0
+LINHA1: DB 'J','O','A','O',' ','P','E','D','R','O',0
+LINHA2: DB 'G','O','M','E','S',' ','D','E',' ','S','O','U','Z','A',0
 
 END
