@@ -1,0 +1,37 @@
+; SERIAL BÁSICO
+
+K4800  EQU 243   ; COM K = 2
+KSCON  EQU 50H   ; MODO 1
+KPCON  EQU 0CH   ; K = 1
+
+ORG 00H
+INICIO:
+    JMP START
+    ; VETOR DE INTERRUPÇÕES
+
+ORG 30H
+START:
+    ; INICIALIZAÇÃO (SETUP)
+    ; K = 2
+    ORL PCON, #KPCON
+    ; MODO 1
+    MOV SCON, #KSCON
+    ; CONFIGURAR O BAUD RATE
+    MOV TMOD, #20H
+    MOV TH1, #K4800
+    MOV TL1, #K4800
+    SETB TR1
+
+MAIN:
+    MOV SBUF, #'T'
+    JNB TI, $        ; ESPERA TX!
+    CLR TI
+    MOV SBUF, #'X'
+    JNB TI, $        ; ESPERA TX!
+    CLR TI
+    MOV SBUF, #' '
+    JNB TI, $        ; ESPERA TX!
+    CLR TI
+    JMP MAIN
+
+END
