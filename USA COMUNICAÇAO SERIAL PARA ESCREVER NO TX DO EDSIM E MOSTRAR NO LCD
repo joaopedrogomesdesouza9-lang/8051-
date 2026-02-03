@@ -1,0 +1,163 @@
+; =================================================================
+; PROJETO: SERIAL INTERATIVO COM COMANDO DE LIMPAR
+; 1. Envia mensagem inicial.
+; 2. Recebe caracteres e mostra no LCD.
+; 3. Se receber '*' -> LIMPA O LCD.
+; =================================================================
+
+; --- Definições de Hardware LCD ---
+RS       EQU P1.3
+E        EQU P1.2
+CONTADOR EQU 30H     
+
+; --- Vetores ---
+ORG 0000H
+    LJMP INICIO
+
+ORG 000BH            
+    LJMP ISR_TIMER0
+
+; =================================================================
+; PROGRAMA PRINCIPAL
+; =================================================================
+ORG 0030H
+INICIO:
+    ; --- Configuração Timers e Serial (Igual ao anterior) ---
+    MOV TMOD, #22H        
+    ORL PCON, #80H        
+    MOV TH1, #243         
+    MOV TL1, #243
+    MOV SCON, #50H        
+    SETB TR1              
+
+    MOV TH0, #156         
+    MOV TL0, #156
+    SETB EA               
+    SETB ET0              
+
+    ; --- Inicializa LCD ---
+    LCALL CONFIGURA_LCD
+
+    ; --- Envia mensagem para o PC ---
+    MOV DPTR, #MSG_PC     
+    LCALL ENVIA_SERIAL_STRING
+
+    ; --- Loop Principal ---
+LOOP_DIGITACAO:
+    JNB RI, $             ; Espera caractere
+    CLR RI                ; Limpa flag
+    MOV A, SBUF           ; Pega o caractere
+
+    ; --- VERIFICAÇÃO DE COMANDO ---
+    CJNE A, #'*', ESCREVE_NORMAL  ; É um asterisco (*)?
+    
+    ; SE FOR '*': LIMPA O LCD
+    MOV A, #01H           ; Comando Clear Display
+    LCALL ENVIA_COMANDO
+    LCALL ESPERA_1MS      ; Delay extra de segurança para o Clear
+    SJMP LOOP_DIGITACAO   ; Volta para esperar o próximo
+
+ESCREVE_NORMAL:
+    ; SE NÃO FOR '*': ESCREVE NO LCD
+    LCALL ESCREVE_LETRA   
+    SJMP LOOP_DIGITACAO   
+
+; =================================================================
+; ROTINAS AUXILIARES (Serial e LCD)
+; =================================================================
+ENVIA_SERIAL_STRING:
+    CLR A
+    MOVC A, @A+DPTR       
+    JZ FIM_ENVIO_SERIAL   
+    MOV SBUF, A           
+    JNB TI, $             
+    CLR TI                
+    INC DPTR              
+    SJMP ENVIA_SERIAL_STRING
+FIM_ENVIO_SERIAL:
+    RET
+
+CONFIGURA_LCD:
+    LCALL ESPERA_16MS
+    MOV A, #28H           
+    LCALL ENVIA_COMANDO
+    LCALL ESPERA_5MS
+    MOV A, #28H
+    LCALL ENVIA_COMANDO
+    LCALL ESPERA_1MS
+    MOV A, #0FH           ; Display ON, Cursor Piscando
+    LCALL ENVIA_COMANDO
+    LCALL ESPERA_1MS
+    MOV A, #01H           ; Limpa Tela
+    LCALL ENVIA_COMANDO
+    LCALL ESPERA_1MS
+    LCALL ESPERA_1MS 
+    MOV A, #06H           
+    LCALL ENVIA_COMANDO
+    LCALL ESPERA_1MS
+    RET
+
+ENVIA_COMANDO:
+    CLR RS
+    SJMP ENVIA_DADOS_LCD
+
+ESCREVE_LETRA:
+    SETB RS
+
+ENVIA_DADOS_LCD:
+    PUSH ACC
+    ANL A, #0F0H
+    ANL P1, #0FH
+    ORL P1, A
+    LCALL PULSO_ENABLE
+    POP ACC
+    SWAP A
+    ANL A, #0F0H
+    ANL P1, #0FH
+    ORL P1, A
+    LCALL PULSO_ENABLE
+    LCALL ESPERA_1MS
+    RET
+
+PULSO_ENABLE:
+    SETB E
+    NOP
+    CLR E
+    RET
+
+; =================================================================
+; ROTINAS DE TEMPO
+; =================================================================
+ISR_TIMER0:
+    DJNZ CONTADOR, SAI_ISR
+    CLR TR0
+SAI_ISR:
+    RETI
+
+ESPERA_TIMER:
+    SETB TR0
+ESPERA_LOOP:
+    JB TR0, ESPERA_LOOP
+    RET
+
+ESPERA_1MS:
+    MOV CONTADOR, #10
+    LCALL ESPERA_TIMER
+    RET
+
+ESPERA_5MS:
+    MOV CONTADOR, #50
+    LCALL ESPERA_TIMER
+    RET
+
+ESPERA_16MS:
+    MOV CONTADOR, #160
+    LCALL ESPERA_TIMER
+    RET
+
+; =================================================================
+; MENSAGEM
+; =================================================================
+MSG_PC: DB 'D','i','g','i','t','e',' ','n','o',' ','L','C','D',' ','(','*',' ','=',' ','L','i','m','p','a',')',':', 13, 10, 0
+
+END
