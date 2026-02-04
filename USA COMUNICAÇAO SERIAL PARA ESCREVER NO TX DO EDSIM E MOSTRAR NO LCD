@@ -1,19 +1,14 @@
 
-; --- Definições de Hardware LCD ---
 RS       EQU P1.3
 E        EQU P1.2
 CONTADOR EQU 30H     
 
-; --- Vetores 
 ORG 0000H
     LJMP INICIO
 
 ORG 000BH            
     LJMP ISR_TIMER0
 
-; =================================================================
-; PROGRAMA PRINCIPAL
-; =================================================================
 ORG 0030H
 INICIO:
     ; --- Configuração Timers e Serial 
