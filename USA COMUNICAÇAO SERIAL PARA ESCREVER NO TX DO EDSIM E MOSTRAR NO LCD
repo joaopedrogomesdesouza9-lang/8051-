@@ -1,16 +1,10 @@
-; =================================================================
-; PROJETO: SERIAL INTERATIVO COM COMANDO DE LIMPAR
-; 1. Envia mensagem inicial.
-; 2. Recebe caracteres e mostra no LCD.
-; 3. Se receber '*' -> LIMPA O LCD.
-; =================================================================
 
 ; --- Definições de Hardware LCD ---
 RS       EQU P1.3
 E        EQU P1.2
 CONTADOR EQU 30H     
 
-; --- Vetores ---
+; --- Vetores 
 ORG 0000H
     LJMP INICIO
 
@@ -22,12 +16,12 @@ ORG 000BH
 ; =================================================================
 ORG 0030H
 INICIO:
-    ; --- Configuração Timers e Serial (Igual ao anterior) ---
-    MOV TMOD, #22H        
-    ORL PCON, #80H        
+    ; --- Configuração Timers e Serial 
+    MOV TMOD, #22H ; TIMERO E TIMER1 MODO 2       
+    MOV PCON, #80H  ; SMOD=1  
+    MOV SCON, #50H ; MODO 1
     MOV TH1, #243         
-    MOV TL1, #243
-    MOV SCON, #50H        
+    MOV TL1, #243       
     SETB TR1              
 
     MOV TH0, #156         
@@ -35,27 +29,27 @@ INICIO:
     SETB EA               
     SETB ET0              
 
-    ; --- Inicializa LCD ---
+    ; --- Inicializa LCD
     LCALL CONFIGURA_LCD
 
-    ; --- Envia mensagem para o PC ---
+    ; --- Envia mensagem para o PC 
     MOV DPTR, #MSG_PC     
     LCALL ENVIA_SERIAL_STRING
 
-    ; --- Loop Principal ---
+    ; --- Loop Principal 
 LOOP_DIGITACAO:
     JNB RI, $             ; Espera caractere
     CLR RI                ; Limpa flag
     MOV A, SBUF           ; Pega o caractere
 
     ; --- VERIFICAÇÃO DE COMANDO ---
-    CJNE A, #'*', ESCREVE_NORMAL  ; É um asterisco (*)?
+    CJNE A, #'*', ESCREVE_NORMAL  ;
     
     ; SE FOR '*': LIMPA O LCD
-    MOV A, #01H           ; Comando Clear Display
+    MOV A, #01H           ; Clear Display
     LCALL ENVIA_COMANDO
-    LCALL ESPERA_1MS      ; Delay extra de segurança para o Clear
-    SJMP LOOP_DIGITACAO   ; Volta para esperar o próximo
+    LCALL ESPERA_1MS      
+    SJMP LOOP_DIGITACAO   
 
 ESCREVE_NORMAL:
     ; SE NÃO FOR '*': ESCREVE NO LCD
@@ -158,6 +152,6 @@ ESPERA_16MS:
 ; =================================================================
 ; MENSAGEM
 ; =================================================================
-MSG_PC: DB 'D','i','g','i','t','e',' ','n','o',' ','L','C','D',' ','(','*',' ','=',' ','L','i','m','p','a',')',':', 13, 10, 0
+MSG_PC: DB 'D','i','g','i','t','e',' ','n','o',' ','L','C','D',' ','(','*',' ','=',' ','L','i','m','p','a',')',':', 0
 
 END
