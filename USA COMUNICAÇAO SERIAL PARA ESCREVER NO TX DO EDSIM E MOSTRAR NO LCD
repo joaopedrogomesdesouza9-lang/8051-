@@ -31,7 +31,7 @@ INICIO:
     MOV DPTR, #MSG_PC     
     LCALL ENVIA_SERIAL_STRING
 
-    ; --- Loop Principal 
+    
 LOOP_DIGITACAO:
     JNB RI, $             ; Espera caractere
     CLR RI                ; Limpa flag
@@ -40,7 +40,7 @@ LOOP_DIGITACAO:
     ; --- VERIFICAÇÃO DE COMANDO ---
     CJNE A, #'*', ESCREVE_NORMAL  ;
     
-    ; SE FOR '*': LIMPA O LCD
+    
     MOV A, #01H           ; Clear Display
     LCALL ENVIA_COMANDO
     LCALL ESPERA_1MS      
