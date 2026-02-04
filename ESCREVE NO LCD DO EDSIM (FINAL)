@@ -1,7 +1,3 @@
-; LCD 16x2
-; P1.7-P1.4 = DB7-DB4, P1.3 = RS, P1.2 = E
-
-
 RS       EQU P1.3
 E        EQU P1.2
 CONTADOR EQU 30H     
@@ -9,98 +5,91 @@ CONTADOR EQU 30H
 ORG 0000H
     LJMP INICIO
 
-ORG 000BH                  
-    LJMP TIMER0
+ORG 000BH            
+    LJMP ISR_TIMER0
 
 ORG 0030H
 INICIO:
+    ; --- Configuração Timers e Serial 
+    MOV TMOD, #22H ; TIMERO E TIMER1 MODO 2       
+    MOV PCON, #80H  ; SMOD=1      
+    MOV TH1, #243         
+    MOV TL1, #243
+    MOV SCON, #50H        
+    SETB TR1              
 
-    ; Configura Timer 0 Modo 2 
-    MOV TMOD, #02H          
-    MOV TH0, #156           ; 256-156 = 100µs 
+    MOV TH0, #156         
     MOV TL0, #156
-    SETB EA                 
-    SETB ET0                
+    SETB EA               
+    SETB ET0              
 
+    ; --- Inicializa LCD
     LCALL CONFIGURA_LCD
 
-    ; Linha 1 - "JOAO PEDRO"
-    MOV A, #83H
+    ; --- Envia mensagem para o PC 
+    MOV DPTR, #MSG_PC     
+    LCALL ENVIA_SERIAL_STRING
+
+    ; --- Loop Principal 
+LOOP_DIGITACAO:
+    JNB RI, $             
+    CLR RI                
+    MOV A, SBUF          
+
+    ; --- VERIFICAÇÃO DE COMANDO ---
+    CJNE A, #'*', ESCREVE_NORMAL  ;
+    
+    ; SE FOR '*': LIMPA O LCD
+    MOV A, #01H           ; Clear Display
     LCALL ENVIA_COMANDO
-    MOV DPTR, #LINHA1
-    LCALL ESCREVE_STRING
+    LCALL ESPERA_1MS      
+    SJMP LOOP_DIGITACAO   
 
-    ; Linha 2 - "GOMES DE SOUZA"
-    MOV A, #0C1H
-    LCALL ENVIA_COMANDO
-    MOV DPTR, #LINHA2
-    LCALL ESCREVE_STRING 
+ESCREVE_NORMAL:
+    LCALL ESCREVE_LETRA   
+    SJMP LOOP_DIGITACAO   
 
-    SJMP $
-
-
-; ========== ROTINAS DO LCD ==========
+; =================================================================
+; ROTINAS AUXILIARES
+; =================================================================
+ENVIA_SERIAL_STRING:
+    CLR A
+    MOVC A, @A+DPTR       
+    JZ FIM_ENVIO_SERIAL   
+    MOV SBUF, A           
+    JNB TI, $             
+    CLR TI                
+    INC DPTR              
+    SJMP ENVIA_SERIAL_STRING
+FIM_ENVIO_SERIAL:
+    RET
 
 CONFIGURA_LCD:
     LCALL ESPERA_16MS
-
-    ; RS = 0, R/W = 0
-  ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
-  ;  0    0    1    DL   N    F    x    x
-
-
-    MOV A, #28H             ; 4 bits, 2 linhas, fonte 5x8
+    MOV A, #28H           
     LCALL ENVIA_COMANDO
     LCALL ESPERA_5MS
-
     MOV A, #28H
     LCALL ENVIA_COMANDO
     LCALL ESPERA_1MS
-
-
-  ; RS = 0, R/W = 0
-  ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
-  ;  0    0    0    0    1    D    C    B
-
-    MOV A, #0CH             ; Display ligado, cursor desligado
+    MOV A, #0FH           ; Display ON, Cursor Piscando
     LCALL ENVIA_COMANDO
     LCALL ESPERA_1MS
-
-
-    MOV A, #01H             ; Limpa tela
+    MOV A, #01H           ; Limpa Tela
     LCALL ENVIA_COMANDO
     LCALL ESPERA_1MS
     LCALL ESPERA_1MS 
-
-  ; RS = 0, R/W = 0
-  ; DB7  DB6  DB5  DB4  DB3  DB2  DB1  DB0
-  ;  0    0    0    0    0    1   I/D   S
-
-    MOV A, #06H             ; Cursor incrementa 
+    MOV A, #06H           
     LCALL ENVIA_COMANDO
     LCALL ESPERA_1MS
     RET
-
-
-ESCREVE_STRING:
-    CLR A
-    MOVC A, @A+DPTR
-    JZ FIM_STRING
-    LCALL ESCREVE_LETRA
-    INC DPTR
-    SJMP ESCREVE_STRING
-FIM_STRING:
-    RET
-
 
 ENVIA_COMANDO:
     CLR RS
     SJMP ENVIA_DADOS_LCD
 
-
 ESCREVE_LETRA:
     SETB RS
-
 
 ENVIA_DADOS_LCD:
     PUSH ACC
@@ -108,7 +97,6 @@ ENVIA_DADOS_LCD:
     ANL P1, #0FH
     ORL P1, A
     LCALL PULSO_ENABLE
-
     POP ACC
     SWAP A
     ANL A, #0F0H
@@ -118,49 +106,45 @@ ENVIA_DADOS_LCD:
     LCALL ESPERA_1MS
     RET
 
-
 PULSO_ENABLE:
     SETB E
     NOP
     CLR E
     RET
 
-
-; ========== ROTINAS DO TIMER ==========
-
-TIMER0:
-    DJNZ CONTADOR, FIM_TIMER
+; =================================================================
+; ROTINAS DE TEMPO
+; =================================================================
+ISR_TIMER0:
+    DJNZ CONTADOR, SAI_ISR
     CLR TR0
-FIM_TIMER:
+SAI_ISR:
     RETI
 
-
 ESPERA_TIMER:
-    SETB TR0              
+    SETB TR0
 ESPERA_LOOP:
-    JB TR0, ESPERA_LOOP     
+    JB TR0, ESPERA_LOOP
     RET
 
-
 ESPERA_1MS:
-    MOV CONTADOR, #10       ; 10 x 100µs = 1ms
+    MOV CONTADOR, #10
     LCALL ESPERA_TIMER
     RET
 
 ESPERA_5MS:
-    MOV CONTADOR, #50       ; 50 x 100µs = 5ms
+    MOV CONTADOR, #50
     LCALL ESPERA_TIMER
     RET
-
 
 ESPERA_16MS:
-    MOV CONTADOR, #160      ; 160 x 100µs = 16ms
+    MOV CONTADOR, #160
     LCALL ESPERA_TIMER
     RET
 
-; ====STRINGS====
-
-LINHA1: DB 'J','O','A','O',' ','P','E','D','R','O',0
-LINHA2: DB 'G','O','M','E','S',' ','D','E',' ','S','O','U','Z','A',0
+; =================================================================
+; MENSAGEM
+; =================================================================
+MSG_PC: DB 'D','i','g','i','t','e',' ','n','o',' ','L','C','D',' ','(','*',' ','=',' ','L','i','m','p','a',')',':', 0
 
 END
